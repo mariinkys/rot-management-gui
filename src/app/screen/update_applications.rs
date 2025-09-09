@@ -72,6 +72,10 @@ impl UpdateApplications {
                 .into();
         };
 
+        let any_app_updating = applications
+            .iter()
+            .any(|app| app.application_status == ApplicationStatus::Updating);
+
         let content = if applications.is_empty() {
             column![
                 Space::new(Length::Fill, Length::Fixed(35.)),
@@ -95,10 +99,6 @@ impl UpdateApplications {
                 .align_x(Alignment::Center)
                 .height(Length::Fill)
                 .width(Length::Fill);
-
-            let any_app_updating = applications
-                .iter()
-                .any(|app| app.application_status == ApplicationStatus::Updating);
 
             for (index, app) in applications.iter().enumerate() {
                 let button_status =
@@ -189,7 +189,11 @@ impl UpdateApplications {
 
         let back_button = container(
             button(icons::get_icon("go-previous-symbolic", 18))
-                .on_press(Message::Back)
+                .on_press_maybe(if any_app_updating {
+                    None
+                } else {
+                    Some(Message::Back)
+                })
                 .style(icon_button_style),
         )
         .align_x(Alignment::Start)
@@ -200,7 +204,11 @@ impl UpdateApplications {
 
         let refresh_button = container(
             button(icons::get_icon("view-refresh-symbolic", 18))
-                .on_press(Message::RefreshApplicationsList)
+                .on_press_maybe(if any_app_updating {
+                    None
+                } else {
+                    Some(Message::RefreshApplicationsList)
+                })
                 .style(icon_button_style),
         )
         .align_x(Alignment::End)
