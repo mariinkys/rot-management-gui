@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Space, button, column, container, row, text};
+use iced::widget::{Space, button, column, container, row, scrollable, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::update_applications::{
@@ -173,7 +173,7 @@ impl UpdateApplications {
                             Some(Message::UpdateAllApplications)
                         })
                 ],
-                applications_accordion
+                scrollable(applications_accordion),
             ]
             .padding(20.)
             .spacing(5.)
