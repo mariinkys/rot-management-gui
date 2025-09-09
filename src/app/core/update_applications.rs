@@ -92,8 +92,9 @@ impl Application {
         Ok(apps)
     }
 
-    /// Returns the avialble updates as Hashmap<app_id, version>
+    /// Returns the available updates that can actually be updated as HashMap<app_id, version>
     async fn get_available_updates() -> Result<HashMap<String, String>, anywho::Error> {
+        use std::io::Write;
         use std::sync::Arc;
         use tokio::sync::Mutex;
         use tokio::task;
@@ -118,53 +119,79 @@ impl Application {
                     }
                 );
 
-                let output = task::spawn_blocking({
+                // Get updatable apps by simulating what 'flatpak update' would do
+                let update_output = task::spawn_blocking({
                     let installation = installation.clone();
                     move || {
                         Command::new("flatpak")
-                            .args([
-                                "remote-ls",
-                                &installation,
-                                "--updates",
-                                "--app",
-                                "--columns=application,version",
-                            ])
-                            .output()
+                            .args(["update", &installation])
+                            .stdin(std::process::Stdio::piped())
+                            .stdout(std::process::Stdio::piped())
+                            .stderr(std::process::Stdio::piped())
+                            .spawn()
+                            .and_then(|mut child| {
+                                // Send 'n' to decline the update, so we just get the list
+                                if let Some(mut stdin) = child.stdin.take() {
+                                    let _ = stdin.write_all(b"n\n");
+                                }
+                                child.wait_with_output()
+                            })
                     }
                 })
                 .await;
 
-                match output {
-                    Ok(Ok(cmd_output)) if cmd_output.status.success() => {
+                match update_output {
+                    Ok(Ok(cmd_output)) => {
                         let output_str = String::from_utf8_lossy(&cmd_output.stdout);
                         let mut local_updates = HashMap::new();
+                        let mut found_list = false;
 
                         for line in output_str.lines() {
-                            let parts: Vec<&str> = line.split_whitespace().collect();
-                            if parts.len() >= 2 {
-                                let app_id = parts[0];
-                                let version = parts[1];
-                                println!("Found update: {} -> {}", app_id, version);
-                                local_updates.insert(app_id.to_string(), version.to_string());
+                            let trimmed = line.trim();
+
+                            // Look for the start of the numbered list
+                            if !found_list && trimmed.starts_with("1.") {
+                                found_list = true;
+                            }
+
+                            // If we found the list, parse numbered entries
+                            if found_list {
+                                // Parse lines like: " 1.     org.gnome.Calculator         stable    u    fedora    < 2,5 MB"
+                                #[allow(clippy::collapsible_if)]
+                                if let Some(number_end) = trimmed.find('.') {
+                                    if trimmed[..number_end]
+                                        .chars()
+                                        .all(|c| c.is_ascii_digit() || c.is_whitespace())
+                                    {
+                                        let after_number = &trimmed[number_end + 1..].trim();
+                                        let parts: Vec<&str> =
+                                            after_number.split_whitespace().collect();
+
+                                        if !parts.is_empty() {
+                                            let app_id = parts[0];
+
+                                            // Get the version from remote-ls
+                                            if let Ok(version) =
+                                                Self::get_app_version(&installation, app_id).await
+                                            {
+                                                println!(
+                                                    "Found updatable app: {} -> {}",
+                                                    app_id, version
+                                                );
+                                                local_updates.insert(app_id.to_string(), version);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
                         let mut global_updates = updates.lock().await;
                         global_updates.extend(local_updates);
                     }
-                    Ok(Ok(_)) => {
-                        println!(
-                            "No updates found for {} installation",
-                            if installation == "--user" {
-                                "user"
-                            } else {
-                                "system"
-                            }
-                        );
-                    }
                     Ok(Err(e)) => {
                         eprintln!(
-                            "Command failed for {} installation: {}",
+                            "Update command failed for {} installation: {}",
                             if installation == "--user" {
                                 "user"
                             } else {
@@ -175,7 +202,7 @@ impl Application {
                     }
                     Err(e) => {
                         eprintln!(
-                            "Task failed for {} installation: {}",
+                            "Update task failed for {} installation: {}",
                             if installation == "--user" {
                                 "user"
                             } else {
@@ -202,11 +229,44 @@ impl Application {
             .into_inner();
 
         if !updates.is_empty() {
-            println!("Found {} total updates", updates.len());
+            println!("Found {} total updatable apps", updates.len());
             Ok(updates)
         } else {
             Err(anywho!("No updates found"))
         }
+    }
+
+    /// Helper function to get the version of a specific app
+    async fn get_app_version(installation: &str, app_id: &str) -> Result<String, anywho::Error> {
+        use tokio::task;
+
+        let output = task::spawn_blocking({
+            let installation = installation.to_string();
+            move || {
+                Command::new("flatpak")
+                    .args([
+                        "remote-ls",
+                        &installation,
+                        "--updates",
+                        "--app",
+                        "--columns=application,version",
+                    ])
+                    .output()
+            }
+        })
+        .await??;
+
+        if output.status.success() {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            for line in output_str.lines() {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 && parts[0] == app_id {
+                    return Ok(parts[1].to_string());
+                }
+            }
+        }
+
+        Err(anywho!("Version not found for {}", app_id))
     }
 
     /// Get the display name for an application
