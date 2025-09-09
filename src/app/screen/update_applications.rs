@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Space, button, column, container, row, text};
+use iced::widget::{Space, button, column, container, row, scrollable, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::update_applications::{
@@ -101,11 +101,12 @@ impl UpdateApplications {
                 .any(|app| app.application_status == ApplicationStatus::Updating);
 
             for (index, app) in applications.iter().enumerate() {
-                let button_status = if app.application_status == ApplicationStatus::Updating {
-                    AccordionButtonStatus::Disabled
-                } else {
-                    AccordionButtonStatus::Enabled
-                };
+                let button_status =
+                    if app.application_status == ApplicationStatus::Updating || any_app_updating {
+                        AccordionButtonStatus::Disabled
+                    } else {
+                        AccordionButtonStatus::Enabled
+                    };
 
                 let icon = if let Some(svg_path) = &app.icon {
                     AccordionIcon::Path {
@@ -119,7 +120,10 @@ impl UpdateApplications {
                     applications_accordion = applications_accordion.push(accordion_button(
                         AccordionButtonPosition::Top,
                         app.name.to_string(),
-                        format!("{} >>> {}", app.current_version, app.latest_version),
+                        format!(
+                            "{} >>> {} (Hash may be different)",
+                            app.current_version, app.latest_version
+                        ),
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
@@ -128,7 +132,10 @@ impl UpdateApplications {
                     applications_accordion = applications_accordion.push(accordion_button(
                         AccordionButtonPosition::Bottom,
                         app.name.to_string(),
-                        format!("{} >>> {}", app.current_version, app.latest_version),
+                        format!(
+                            "{} >>> {} (Hash may be different)",
+                            app.current_version, app.latest_version
+                        ),
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
@@ -137,7 +144,10 @@ impl UpdateApplications {
                     applications_accordion = applications_accordion.push(accordion_button(
                         AccordionButtonPosition::Middle,
                         app.name.to_string(),
-                        format!("{} >>> {}", app.current_version, app.latest_version),
+                        format!(
+                            "{} >>> {} (Hash may be different)",
+                            app.current_version, app.latest_version
+                        ),
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
@@ -163,7 +173,7 @@ impl UpdateApplications {
                             Some(Message::UpdateAllApplications)
                         })
                 ],
-                applications_accordion
+                scrollable(applications_accordion),
             ]
             .padding(20.)
             .spacing(5.)

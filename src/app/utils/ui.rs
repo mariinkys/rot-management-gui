@@ -70,11 +70,11 @@ where
             let handle = svg::Handle::from_path(svg_path);
             container(
                 svg::Svg::new(handle)
-                    .width(iced::Length::Fixed(30.))
-                    .height(iced::Length::Fixed(30.)),
+                    .width(iced::Length::Fixed(50.))
+                    .height(iced::Length::Fixed(50.)),
             )
-            .width(Length::Fixed(30.))
-            .height(Length::Fixed(30.))
+            .width(Length::Fixed(50.))
+            .height(Length::Fixed(50.))
             .align_y(Alignment::Center)
             .into()
         }
@@ -82,11 +82,11 @@ where
             let handle = svg.get();
             container(
                 svg::Svg::new(handle)
-                    .width(iced::Length::Fixed(30.))
-                    .height(iced::Length::Fixed(30.)),
+                    .width(iced::Length::Fixed(40.))
+                    .height(iced::Length::Fixed(40.)),
             )
-            .width(Length::Fixed(30.))
-            .height(Length::Fixed(30.))
+            .width(Length::Fixed(40.))
+            .height(Length::Fixed(40.))
             .align_y(Alignment::Center)
             .into()
         }

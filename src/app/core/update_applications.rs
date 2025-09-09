@@ -34,7 +34,7 @@ impl Application {
             }
         };
 
-        let available_updates = match Self::get_available_updates(&installed_apps).await {
+        let available_updates = match Self::get_available_updates().await {
             Ok(updates) => updates,
             Err(e) => {
                 eprintln!("Failed to get available updates: {}", e);
@@ -42,24 +42,21 @@ impl Application {
             }
         };
 
-        for (app_id, current_version) in installed_apps {
-            #[allow(clippy::collapsible_if)]
-            if let Some(latest_version) = available_updates.get(&app_id) {
-                if current_version != *latest_version {
-                    let icon_path = Self::get_app_icon(&app_id);
-                    let display_name = Self::get_app_display_name(&app_id)
-                        .await
-                        .unwrap_or(app_id.clone());
+        for (app_id, latest_version) in available_updates {
+            if let Some(current_version) = installed_apps.get(&app_id) {
+                let icon_path = Self::get_app_icon(&app_id);
+                let display_name = Self::get_app_display_name(&app_id)
+                    .await
+                    .unwrap_or(app_id.clone());
 
-                    applications.push(Application {
-                        name: display_name,
-                        app_id,
-                        icon: icon_path,
-                        current_version,
-                        latest_version: latest_version.clone(),
-                        application_status: ApplicationStatus::default(),
-                    });
-                }
+                applications.push(Application {
+                    name: display_name,
+                    app_id,
+                    icon: icon_path,
+                    current_version: current_version.to_string(),
+                    latest_version,
+                    application_status: ApplicationStatus::default(),
+                });
             }
         }
 
@@ -95,135 +92,159 @@ impl Application {
         Ok(apps)
     }
 
-    async fn get_available_updates(
-        installed_apps: &HashMap<String, String>,
-    ) -> Result<HashMap<String, String>, anywho::Error> {
+    /// Returns the available updates that can actually be updated as HashMap<app_id, version>
+    async fn get_available_updates() -> Result<HashMap<String, String>, anywho::Error> {
         use std::sync::Arc;
-        use tokio::sync::Semaphore;
+        use tokio::sync::Mutex;
+        use tokio::task;
 
         println!("Checking for updates...");
-        let appstream_update = Command::new("flatpak")
-            .args(["update", "--appstream"])
-            .output();
-        if let Err(e) = appstream_update {
-            eprintln!("Warning: Failed to update appstream data: {}", e);
-        }
 
-        let updates = Arc::new(tokio::sync::Mutex::new(HashMap::new()));
-
-        let semaphore = Arc::new(Semaphore::new(20));
+        let updates = Arc::new(Mutex::new(HashMap::new()));
+        let installations = vec!["--user", "--system"];
         let mut handles = Vec::new();
 
-        for (app_id, current_version) in installed_apps.iter() {
-            let permit = semaphore.clone().acquire_owned().await.unwrap();
+        for installation_flag in installations {
             let updates = updates.clone();
-            let app_id = app_id.clone();
-            let current_version = current_version.clone();
+            let installation = installation_flag.to_string();
 
-            let handle = tokio::task::spawn(async move {
-                let _permit = permit;
-
-                #[allow(clippy::collapsible_if)]
-                if let Ok(remote_version) = Self::get_remote_version(&app_id).await {
-                    if Self::is_version_newer(&remote_version, &current_version) {
-                        println!(
-                            "Found update for {}: {} -> {}",
-                            app_id, current_version, remote_version
-                        );
-                        updates.lock().await.insert(app_id, remote_version);
+            let handle = task::spawn(async move {
+                println!(
+                    "Checking {} installation...",
+                    if installation == "--user" {
+                        "user"
+                    } else {
+                        "system"
                     }
+                );
+
+                // get all available updates with versions in one call
+                let all_updates_task = task::spawn_blocking({
+                    let installation = installation.clone();
+                    move || {
+                        Command::new("flatpak")
+                            .args([
+                                "remote-ls",
+                                &installation,
+                                "--updates",
+                                "--app",
+                                "--columns=application,version",
+                            ])
+                            .output()
+                    }
+                });
+
+                // get the list of actually updatable apps
+                let updatable_apps_task = task::spawn_blocking({
+                    let installation = installation.clone();
+                    move || {
+                        Command::new("flatpak")
+                            .args(["update", &installation])
+                            .stdin(std::process::Stdio::piped())
+                            .stdout(std::process::Stdio::piped())
+                            .stderr(std::process::Stdio::piped())
+                            .spawn()
+                            .and_then(|mut child| {
+                                // send 'n' to decline the update, so we just get the list
+                                if let Some(mut stdin) = child.stdin.take() {
+                                    use std::io::Write;
+                                    let _ = stdin.write_all(b"n\n");
+                                }
+                                child.wait_with_output()
+                            })
+                    }
+                });
+
+                // Wait for both tasks to complete
+                let (all_updates_result, updatable_apps_result) =
+                    tokio::join!(all_updates_task, updatable_apps_task);
+
+                // Parse available updates into a HashMap
+                let mut available_versions = HashMap::new();
+                #[allow(clippy::collapsible_if)]
+                if let Ok(Ok(cmd_output)) = all_updates_result {
+                    if cmd_output.status.success() {
+                        let output_str = String::from_utf8_lossy(&cmd_output.stdout);
+                        for line in output_str.lines() {
+                            let parts: Vec<&str> = line.split_whitespace().collect();
+                            if parts.len() >= 2 {
+                                available_versions
+                                    .insert(parts[0].to_string(), parts[1].to_string());
+                            }
+                        }
+                    }
+                }
+
+                // parse updatable apps
+                if let Ok(Ok(cmd_output)) = updatable_apps_result {
+                    let output_str = String::from_utf8_lossy(&cmd_output.stdout);
+                    let mut local_updates = HashMap::new();
+                    let mut found_list = false;
+
+                    for line in output_str.lines() {
+                        let trimmed = line.trim();
+
+                        // look for the start of the numbered list
+                        if !found_list && trimmed.starts_with("1.") {
+                            found_list = true;
+                        }
+
+                        // if we found the list, parse numbered entries
+                        if found_list {
+                            // parse lines like: "1.   org.gnome.Calculator stable  u   fedora  <   2,5 MB"
+                            #[allow(clippy::collapsible_if)]
+                            if let Some(number_end) = trimmed.find('.') {
+                                if trimmed[..number_end]
+                                    .chars()
+                                    .all(|c| c.is_ascii_digit() || c.is_whitespace())
+                                {
+                                    let after_number = &trimmed[number_end + 1..].trim();
+                                    let parts: Vec<&str> =
+                                        after_number.split_whitespace().collect();
+
+                                    if !parts.is_empty() {
+                                        let app_id = parts[0];
+
+                                        // look up version from pre-fetched map
+                                        if let Some(version) = available_versions.get(app_id) {
+                                            println!(
+                                                "Found updatable app: {} -> {}",
+                                                app_id, version
+                                            );
+                                            local_updates
+                                                .insert(app_id.to_string(), version.clone());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    let mut global_updates = updates.lock().await;
+                    global_updates.extend(local_updates);
                 }
             });
 
             handles.push(handle);
         }
 
-        // wait for all tasks to finish
+        // wait for all installations to be checked
         for handle in handles {
-            let _ = handle.await;
+            if let Err(e) = handle.await {
+                eprintln!("Installation check task panicked: {:?}", e);
+            }
         }
 
-        let updates = Arc::try_unwrap(updates).unwrap().into_inner();
+        let updates = Arc::try_unwrap(updates)
+            .map_err(|_| anywho!("Failed to unwrap Arc"))?
+            .into_inner();
 
         if !updates.is_empty() {
-            println!("Found {} updates", updates.len());
+            println!("Found {} total updatable apps", updates.len());
             Ok(updates)
         } else {
             Err(anywho!("No updates found"))
         }
-    }
-
-    /// Get the remote version of a specific application
-    async fn get_remote_version(app_id: &str) -> Result<String, anywho::Error> {
-        let output = Command::new("flatpak")
-            .args(["remote-info", "flathub", app_id])
-            .output()?;
-
-        if !output.status.success() {
-            return Err(anywho!("Failed to get remote info for {}", app_id));
-        }
-
-        let output_str = String::from_utf8_lossy(&output.stdout);
-
-        for line in output_str.lines() {
-            let line = line.trim_start();
-            if let Some(version) = line.strip_prefix("Version:") {
-                return Ok(version.trim().to_string());
-            }
-        }
-
-        for line in output_str.lines() {
-            let line = line.trim_start();
-            if let Some(commit) = line.strip_prefix("Commit:") {
-                return Ok(commit.trim().to_string());
-            }
-        }
-
-        Err(anywho!("No version information found for {}", app_id))
-    }
-
-    /// Compare two version strings to determine if the remote version is newer
-    fn is_version_newer(remote_version: &str, current_version: &str) -> bool {
-        if remote_version == current_version {
-            return false;
-        }
-
-        let normalize_version = |v: &str| -> Vec<String> {
-            v.split(&['.', '-', '_'][..])
-                .map(|s| s.to_string())
-                .collect()
-        };
-
-        let remote_parts = normalize_version(remote_version);
-        let current_parts = normalize_version(current_version);
-
-        let max_len = remote_parts.len().max(current_parts.len());
-
-        for i in 0..max_len {
-            let default_val = String::from("0");
-
-            let remote_part = remote_parts.get(i).unwrap_or(&default_val);
-            let current_part = current_parts.get(i).unwrap_or(&default_val);
-
-            // Try to parse as numbers first
-            match (remote_part.parse::<u64>(), current_part.parse::<u64>()) {
-                (Ok(remote_num), Ok(current_num)) => {
-                    if remote_num > current_num {
-                        return true;
-                    } else if remote_num < current_num {
-                        return false;
-                    }
-                }
-                _ => match remote_part.cmp(current_part) {
-                    std::cmp::Ordering::Greater => return true,
-                    std::cmp::Ordering::Less => return false,
-                    std::cmp::Ordering::Equal => continue,
-                },
-            }
-        }
-
-        // if all parts are equal, check if remote has more parts
-        remote_parts.len() > current_parts.len()
     }
 
     /// Get the display name for an application
@@ -255,7 +276,13 @@ impl Application {
             .force_svg()
             .with_cache()
             .find()
-            .map(|path| path.to_string_lossy().into_owned())
+            .and_then(|path| {
+                if path.extension().and_then(|ext| ext.to_str()) == Some("svg") {
+                    Some(path.to_string_lossy().into_owned())
+                } else {
+                    None
+                }
+            })
     }
 
     /// Update a specific application
