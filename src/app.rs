@@ -293,6 +293,7 @@ impl FAManagement {
                         *screen = Screen::Welcome;
                         return Task::none();
                     }
+                    about::Action::None => return Task::none(),
                 }
             }
             Message::OpenAbout => {

@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{button, column, container, row, text};
+use iced::widget::{button, column, container, mouse_area, row, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::style::icon_button_style;
 use crate::{fl, icons};
+
+const AUTHOR_LINK: &str = "https://github.com/mariinkys";
+const LICENSE_LINK: &str = "https://github.com/mariinkys/fa-management-gui/blob/main/LICENSE";
+const REPOSITORY_LINK: &str = "https://github.com/mariinkys/fa-management-gui";
+const ISSUES_LINK: &str = "https://github.com/mariinkys/fa-management-gui/issues";
+const VERSION_LINK: &str = "https://github.com/mariinkys/fa-management-gui/releases";
 
 pub struct About {}
 
@@ -13,9 +19,12 @@ pub struct About {}
 pub enum Message {
     /// Asks to go back a screen                     
     Back,
+    /// Attempts to open a given URL
+    LaunchURL(String),
 }
 
 pub enum Action {
+    None,
     Back,
 }
 
@@ -40,7 +49,8 @@ impl About {
                         weight: iced::font::Weight::Bold,
                         ..Default::default()
                     }),
-                    text(env!("CARGO_PKG_AUTHORS"))
+                    mouse_area(text(env!("CARGO_PKG_AUTHORS")).style(text::primary))
+                        .on_press(Message::LaunchURL(String::from(AUTHOR_LINK)))
                 ]
                 .spacing(3.)
                 .width(Length::Shrink),
@@ -49,7 +59,8 @@ impl About {
                         weight: iced::font::Weight::Bold,
                         ..Default::default()
                     }),
-                    text(env!("CARGO_PKG_LICENSE"))
+                    mouse_area(text(env!("CARGO_PKG_LICENSE")).style(text::primary))
+                        .on_press(Message::LaunchURL(String::from(LICENSE_LINK)))
                 ]
                 .spacing(3.)
                 .width(Length::Shrink),
@@ -58,7 +69,8 @@ impl About {
                         weight: iced::font::Weight::Bold,
                         ..Default::default()
                     }),
-                    text(env!("CARGO_PKG_REPOSITORY"))
+                    mouse_area(text(env!("CARGO_PKG_REPOSITORY")).style(text::primary))
+                        .on_press(Message::LaunchURL(String::from(REPOSITORY_LINK)))
                 ]
                 .spacing(3.)
                 .width(Length::Shrink),
@@ -67,7 +79,11 @@ impl About {
                         weight: iced::font::Weight::Bold,
                         ..Default::default()
                     }),
-                    text(format!("{}/issues", env!("CARGO_PKG_REPOSITORY")))
+                    mouse_area(
+                        text(format!("{}/issues", env!("CARGO_PKG_REPOSITORY")))
+                            .style(text::primary)
+                    )
+                    .on_press(Message::LaunchURL(String::from(ISSUES_LINK)))
                 ]
                 .spacing(3.)
                 .width(Length::Shrink),
@@ -76,7 +92,8 @@ impl About {
                         weight: iced::font::Weight::Bold,
                         ..Default::default()
                     }),
-                    text(env!("CARGO_PKG_VERSION"))
+                    mouse_area(text(env!("CARGO_PKG_VERSION")).style(text::primary))
+                        .on_press(Message::LaunchURL(String::from(VERSION_LINK)))
                 ]
                 .spacing(3.)
                 .width(Length::Shrink)
@@ -111,6 +128,10 @@ impl About {
     pub fn update(&mut self, message: Message, _now: Instant) -> Action {
         match message {
             Message::Back => Action::Back,
+            Message::LaunchURL(url) => {
+                _ = open::that_detached(url);
+                Action::None
+            }
         }
     }
 
