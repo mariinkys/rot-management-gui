@@ -1,0 +1,13 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Transformed by: SVG Repo Mixer Tools -->
+<svg width="230px" height="230px" viewBox="-256 -256 1536.00 1536.00" class="icon" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="#000000">
+<g id="SVGRepo_bgCarrier" stroke-width="0" transform="translate(0,0), scale(1)">
+<path transform="translate(-256, -256), scale(96)" fill="#1c71d8" d="M9.166.33a2.25 2.25 0 00-2.332 0l-5.25 3.182A2.25 2.25 0 00.5 5.436v5.128a2.25 2.25 0 001.084 1.924l5.25 3.182a2.25 2.25 0 002.332 0l5.25-3.182a2.25 2.25 0 001.084-1.924V5.436a2.25 2.25 0 00-1.084-1.924L9.166.33z" strokewidth="0"/>
+</g>
+<g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" stroke="#CCCCCC" stroke-width="2.048"/>
+<g id="SVGRepo_iconCarrier">
+<path d="M768 704H256a254.688 254.688 0 0 1-64-8.416V928a32 32 0 0 0 32 32h576a32 32 0 0 0 32-32v-232.416A254.688 254.688 0 0 1 768 704z" fill="#deddda"/>
+<path d="M792.928 193.248A287.68 287.68 0 0 1 800 256a286.4 286.4 0 0 1-53.888 167.328c13.984-31.648 21.888-66.56 21.888-103.328a256 256 0 0 0-512 0c0 36.768 7.904 71.68 21.888 103.328A286.4 286.4 0 0 1 224 256c0-21.568 2.56-42.528 7.072-62.752A256 256 0 0 0 256 704h512a256 256 0 0 0 24.928-510.752z" fill="#deddda"/>
+<path d="M802.08 701.504l-3.04 0.416A261.056 261.056 0 0 1 768 704H256c-10.528 0-20.864-0.864-31.072-2.08l-3.04-0.416A256.64 256.64 0 0 1 192 695.808V736h640v-40.192a255.872 255.872 0 0 1-29.92 5.696z" fill=""/>
+</g>
+</svg>

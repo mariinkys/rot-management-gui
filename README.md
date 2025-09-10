@@ -30,6 +30,8 @@ Key features are:
 
 > "[Pop Icons](http://github.com/pop-os/icon-theme)" by [System76](http://system76.com/) is licensed under [CC-SA-4.0](http://creativecommons.org/licenses/by-sa/4.0/)
 
+> Application Icon from [SVGRepo](https://www.svgrepo.com/svg/475104/chief-hat) made by [Yu-Chun Chou](https://www.svgrepo.com/author/Yu-Chun%20Chou/) (colors modified by myself).
+
 ## About me
 
 Check out my [other projects](https://github.com/mariinkys) 
