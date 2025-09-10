@@ -3,8 +3,8 @@
   <img src="./resources/icons/hicolor/scalable/apps/icon.svg" width="150" />
   <h1>FA Management GUI</h1>
 
-  ![GitHub License](https://img.shields.io/github/license/mariinkys/fedora-atomic-management-gui)
-  ![GitHub Repo stars](https://img.shields.io/github/stars/mariinkys/fedora-atomic-management-gui)
+  ![GitHub License](https://img.shields.io/github/license/mariinkys/fa-management-gui)
+  ![GitHub Repo stars](https://img.shields.io/github/stars/mariinkys/fa-management-gui)
 
   <h3>GUI to manage RPM-OSTree Systems (Such as Silverblue or Kinoite)</h3>
 
@@ -40,4 +40,4 @@ You can also help do this and more projects, [Buy me a coffee](https://www.buyme
 
 Copyright 2025 © Alex Marín
 
-Released under the terms of the [GPL-3.0](https://github.com/mariinkys/fedora-atomic-management-gui/blob/main/LICENSE)
+Released under the terms of the [GPL-3.0](https://github.com/mariinkys/fa-management-gui/blob/main/LICENSE)
