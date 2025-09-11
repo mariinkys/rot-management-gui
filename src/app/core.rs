@@ -2,6 +2,7 @@
 
 pub mod config;
 pub mod rollback;
+pub mod system_status;
 pub mod update_applications;
 pub mod update_system;
 pub mod utils;

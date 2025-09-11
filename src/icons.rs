@@ -42,6 +42,8 @@ impl IconCache {
         bundle!("system-software-install-symbolic", 18);
         bundle!("utilities-system-monitor-symbolic", 18);
         bundle!("help-info-symbolic", 18);
+        bundle!("pin-symbolic", 18);
+        bundle!("unpin-symbolic", 18);
         Self { cache }
     }
 

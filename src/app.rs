@@ -241,6 +241,10 @@ impl FAManagement {
                     system_status::Action::AddToast(toast) => {
                         return self.update(Message::AddToast(toast), now);
                     }
+                    system_status::Action::AddToastAndRun((toast, task)) => {
+                        self.toasts.push(toast);
+                        task.map(Message::SystemStatus)
+                    }
                 };
             }
             Message::OpenSystemStatus => {
