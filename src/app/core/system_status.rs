@@ -45,41 +45,66 @@ impl Deployment {
                 continue;
             }
 
-            // new deployment starts with ● or ○
-            if line.starts_with('●') || line.starts_with('○') {
+            // new deployment starts with ● or ○ OR is a deployment name line (contains : and doesn't start with a field name)
+            if line.starts_with('●')
+                || line.starts_with('○')
+                || (line.contains(':')
+                    && !line.starts_with("Version:")
+                    && !line.starts_with("BaseCommit:")
+                    && !line.starts_with("GPGSignature:")
+                    && !line.starts_with("LayeredPackages:")
+                    && !line.starts_with("Pinned:"))
+            {
                 // save previous deployment if exists
                 if let Some(deployment) = current_deployment.take() {
                     deployments.push(deployment);
                 }
 
-                // parse the deployment line: "● fedora:fedora/42/x86_64/silverblue"
-                let parts: Vec<&str> = line.splitn(2, ' ').collect();
-                if parts.len() >= 2 {
-                    let name_version = parts[1].trim();
-                    let (name, version) = if let Some(colon_pos) = name_version.find(':') {
-                        let name = name_version[..colon_pos].to_string();
-                        let version_part = &name_version[colon_pos + 1..];
-                        (name, version_part.to_string())
+                // parse the deployment line
+                let deployment_name = if line.starts_with('●') || line.starts_with('○') {
+                    // "● fedora:fedora/42/x86_64/silverblue"
+                    let parts: Vec<&str> = line.splitn(2, ' ').collect();
+                    if parts.len() >= 2 {
+                        parts[1].trim()
                     } else {
-                        (name_version.to_string(), String::new())
-                    };
+                        continue;
+                    }
+                } else {
+                    // "fedora:fedora/42/x86_64/silverblue" (deployment name without bullet)
+                    line.trim()
+                };
 
-                    current_deployment = Some(Deployment {
-                        name,
-                        version,
-                        base_commit: String::new(),
-                        gpg_signature: String::new(),
-                        layered_packages: String::new(),
-                        is_pinned: false,
-                        index: deployment_index,
-                    });
+                let (name, version) = if let Some(colon_pos) = deployment_name.find(':') {
+                    let name = deployment_name[..colon_pos].to_string();
+                    let version_part = &deployment_name[colon_pos + 1..];
+                    (name, version_part.to_string())
+                } else {
+                    (deployment_name.to_string(), String::new())
+                };
 
-                    deployment_index += 1;
-                }
+                current_deployment = Some(Deployment {
+                    name,
+                    version,
+                    base_commit: String::new(),
+                    gpg_signature: String::new(),
+                    layered_packages: String::new(),
+                    is_pinned: false,
+                    index: deployment_index,
+                });
+
+                deployment_index += 1;
             }
             // parse fields for current deployment
             else if let Some(ref mut deployment) = current_deployment {
-                if line.starts_with("BaseCommit:") {
+                if line.starts_with("Version:") {
+                    let version_info = line.trim_start_matches("Version:").trim();
+                    if let Some(space_pos) = version_info.find(' ') {
+                        deployment.version =
+                            format!("{}/{}", deployment.version, &version_info[..space_pos]);
+                    } else {
+                        deployment.version = format!("{}/{}", deployment.version, version_info);
+                    }
+                } else if line.starts_with("BaseCommit:") {
                     deployment.base_commit =
                         line.trim_start_matches("BaseCommit:").trim().to_string();
                 } else if line.starts_with("GPGSignature:") {
@@ -95,15 +120,8 @@ impl Deployment {
                         deployment.layered_packages = String::from("None");
                     }
                 } else if line.starts_with("Pinned:") {
-                    #[allow(clippy::collapsible_if)]
-                    if line
-                        .trim_start_matches("Pinned:")
-                        .trim()
-                        .to_string()
-                        .eq_ignore_ascii_case("yes")
-                    {
-                        deployment.is_pinned = true;
-                    }
+                    let pinned_value = line.trim_start_matches("Pinned:").trim();
+                    deployment.is_pinned = pinned_value.eq_ignore_ascii_case("yes");
                 }
             }
         }
@@ -125,7 +143,7 @@ impl Deployment {
 
         // pkexec first
         let output = Command::new("pkexec")
-            .args(["rpm-ostree", "admin", "pin", &deployment_index.to_string()])
+            .args(["ostree", "admin", "pin", &deployment_index.to_string()])
             .output()
             .await?;
 
@@ -137,7 +155,7 @@ impl Deployment {
         let output = Command::new("distrobox-host-exec")
             .args([
                 "pkexec",
-                "rpm-ostree",
+                "ostree",
                 "admin",
                 "pin",
                 &deployment_index.to_string(),
@@ -168,7 +186,7 @@ impl Deployment {
         // pkexec first
         let output = Command::new("pkexec")
             .args([
-                "rpm-ostree",
+                "ostree",
                 "admin",
                 "pin",
                 "--unpin",
@@ -185,7 +203,7 @@ impl Deployment {
         let output = Command::new("distrobox-host-exec")
             .args([
                 "pkexec",
-                "rpm-ostree",
+                "ostree",
                 "admin",
                 "pin",
                 "--unpin",
