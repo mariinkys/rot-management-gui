@@ -6,7 +6,7 @@
   ![GitHub License](https://img.shields.io/github/license/mariinkys/fa-management-gui)
   ![GitHub Repo stars](https://img.shields.io/github/stars/mariinkys/fa-management-gui)
 
-  <h3>GUI to manage RPM-OSTree Systems (Such as Silverblue or Kinoite)</h3>
+  <h3>*WIP* GUI to manage RPM-OSTree Systems (Such as Silverblue or Kinoite)</h3>
 
   <img width="700" alt="Main Page Light Mode" src="./screenshots/main-light.png"/>
 </div>
@@ -19,6 +19,10 @@ Key features are:
 - Update your Flatpak applications
 - Rollback your system in case anything goes wrong
 - Pin and Unpin Images, view all your images...
+
+This project is being developed to help people who are not that experienced with Linux and the CLI manage their atomic systems. I know that Gnome Software has "full" integration with RPM OSTree; however, in my personal experience, Gnome Software is not that reliable nor fast on Fedora Silverblue (also, there are some missing options...), hence why I considered developing this tool. This software is not and will never be a full replacement for Gnome Software. I just want people to be able to interact with RPM OSTree and keep both their system and packages updated...
+
+Special thanks to Simon and Catalina for their patience and confidence to switch their work machines from Windows to Fedora Silverblue and for the idea and motivation for this project.
 
 ## Attributions
 
