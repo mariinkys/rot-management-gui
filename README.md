@@ -29,6 +29,12 @@ This project is being developed to help people who are not that experienced with
 
 Special thanks to Simon and Catalina for their patience and confidence to switch their work machines from Windows to Fedora Silverblue and for the idea and motivation for this project.
 
+## TODO
+
+- Layered packages management
+- Improve error handling
+- Match system update styling with system status styling
+
 ## Attributions
 
 <a href="https://github.com/iced-rs/iced">
