@@ -32,6 +32,11 @@ loading = Loading...
 
 system-status = System Status
 system-status-description = System Status 
+no-deployments-error = Error, no deployments found!
+manage-layered-packages = Manage Layered Packages
+pin-deployment = Pin this deployment
+unpin-deployment = Unpin this deployment
+layered-packages = Layered Packages:
 
 configuration = Application Configuration
 theme = Theme
