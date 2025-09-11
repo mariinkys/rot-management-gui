@@ -2,7 +2,7 @@ welcome = Welcome
 subtitle = Please select the operation you'd like to perform
 
 update-system = Update System
-update-system-description = Update your System Image (Requires Reboot)
+update-system-description = Update your System Deployment (Requires Reboot)
 system-update = System Update
 update = Update
 version = Version:
@@ -24,7 +24,7 @@ application-updates = Application Updates
 update-all = Update All
 
 rollback = Rollback
-rollback-description = Rollback to a previous System Image (Requires Reboot)
+rollback-description = Rollback to a previous System Deployment (Requires Reboot)
 rollback-confirmation = Are you sure you want to rollback permanently to your previous deployment?
 applying-rollback = The system is applying a rollback
 rollback-warning = Do not close this program
