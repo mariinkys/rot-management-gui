@@ -63,28 +63,26 @@ impl Rollback {
     pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
         let content = match &self.state {
             State::Ready => column![
-                container(
-                    column![
-                        text(fl!("rollback-confirmation"))
-                            .size(24)
-                            .font(iced::font::Font {
-                                weight: iced::font::Weight::Bold,
-                                ..Default::default()
-                            })
-                            .align_x(Alignment::Center),
-                        button(text(fl!("rollback")))
-                            .style(primary_button_style)
-                            .on_press(Message::Rollback)
-                    ]
-                    .spacing(10.)
-                    .align_x(Alignment::Center)
-                )
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .center(Length::Fill)
+                Space::new(Length::Fill, Length::Fixed(35.)),
+                text(fl!("rollback"))
+                    .size(24)
+                    .font(iced::font::Font {
+                        weight: iced::font::Weight::Bold,
+                        ..Default::default()
+                    })
+                    .align_x(Alignment::Center),
+                text(fl!("rollback-confirmation"))
+                    .size(18)
+                    .align_x(Alignment::Center),
+                button(text(fl!("rollback")))
+                    .style(primary_button_style)
+                    .on_press(Message::Rollback)
             ]
+            .padding(20.)
+            .spacing(10.)
+            .height(Length::Fill)
             .width(Length::Fill)
-            .height(Length::Fill),
+            .align_x(Alignment::Center),
             State::PendingReboot => column![
                 Space::new(Length::Fill, Length::Fixed(35.)),
                 text(fl!("reboot-required"))
