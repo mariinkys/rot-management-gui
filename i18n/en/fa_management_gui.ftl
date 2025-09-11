@@ -42,3 +42,6 @@ license = License:
 repository = Repository:
 issues = Issues:
 version = Version:
+attributions = Attributions
+pop-icons = "Pop Icons" by System76 is licensed under CC-SA-4.0
+app-icon = Application Icon from SVGRepo made by Yu-Chun Chou (colors modified by myself).

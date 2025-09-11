@@ -12,6 +12,7 @@ const LICENSE_LINK: &str = "https://github.com/mariinkys/fa-management-gui/blob/
 const REPOSITORY_LINK: &str = "https://github.com/mariinkys/fa-management-gui";
 const ISSUES_LINK: &str = "https://github.com/mariinkys/fa-management-gui/issues";
 const VERSION_LINK: &str = "https://github.com/mariinkys/fa-management-gui/releases";
+const README_LINK: &str = "https://github.com/mariinkys/fa-management-gui/blob/main/README.md";
 
 pub struct About {}
 
@@ -100,6 +101,32 @@ impl About {
             ]
             .align_x(Alignment::Center)
             .width(Length::Fill),
+            column![
+                text(fl!("attributions"))
+                    .size(24)
+                    .font(iced::font::Font {
+                        weight: iced::font::Weight::Bold,
+                        ..Default::default()
+                    })
+                    .align_x(Alignment::Center)
+                    .width(Length::Fill),
+                mouse_area(
+                    text(fl!("pop-icons"))
+                        .align_x(Alignment::Center)
+                        .width(Length::Fill)
+                        .style(text::primary)
+                )
+                .on_press(Message::LaunchURL(String::from(README_LINK))),
+                mouse_area(
+                    text(fl!("app-icon"))
+                        .align_x(Alignment::Center)
+                        .width(Length::Fill)
+                        .style(text::primary)
+                )
+                .on_press(Message::LaunchURL(String::from(README_LINK))),
+            ]
+            .align_x(Alignment::Center)
+            .width(Length::Fill)
         ]
         .width(Length::Fill)
         .padding(20.)
