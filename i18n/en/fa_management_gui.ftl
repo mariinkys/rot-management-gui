@@ -25,6 +25,10 @@ update-all = Update All
 
 rollback = Rollback
 rollback-description = Rollback to a previous System Image (Requires Reboot)
+rollback-confirmation = Are you sure you want to rollback permanently to your previous deployment?
+applying-rollback = The system is applying a rollback
+rollback-warning = Do not close this program
+loading = Loading...
 
 system-status = System Status
 system-status-description = System Status 

@@ -206,6 +206,10 @@ impl FAManagement {
                     rollback::Action::AddToast(toast) => {
                         return self.update(Message::AddToast(toast), now);
                     }
+                    rollback::Action::AddToastAndRun((toast, task)) => {
+                        self.toasts.push(toast);
+                        task.map(Message::Rollback)
+                    }
                 };
             }
             Message::OpenRollback => {
