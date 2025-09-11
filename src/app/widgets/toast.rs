@@ -139,14 +139,12 @@ where
                     )
                     .width(Fill)
                     .padding(5)
-                    .style(|t| {
-                        match toast.status {
-                            Status::Primary => container::primary(t),
-                            Status::Secondary => container::secondary(t),
-                            Status::Success => container::success(t),
-                            Status::Danger => container::danger(t),
-                            Status::Warning => container::danger(t),
-                        }
+                    .style(match toast.status {
+                        Status::Primary => primary,
+                        Status::Secondary => secondary,
+                        Status::Success => success,
+                        Status::Danger => danger,
+                        Status::Warning => warning,
                     }),
                     horizontal_rule(1),
                     container(text(toast.body.as_str()))
