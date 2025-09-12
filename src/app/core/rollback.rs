@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use anywho::anywho;
+use std::os::unix::process::ExitStatusExt;
+use std::process::ExitStatus;
 
 /// Rollback the system using: pkexec rpm-ostree rollback
 pub async fn rollback() -> Result<(), anywho::Error> {
@@ -14,7 +16,9 @@ pub async fn rollback() -> Result<(), anywho::Error> {
 
     if output.status.success() {
         return Ok(());
-    }
+    } else if output.status == ExitStatus::from_raw(32256) {
+        return Err(anywho!("Permision denied"));
+    };
 
     // fallback to distrobox-host-exec
     let output = Command::new("distrobox-host-exec")

@@ -1,4 +1,6 @@
 use anywho::anywho;
+use std::os::unix::process::ExitStatusExt;
+use std::process::ExitStatus;
 
 #[derive(Debug, Clone)]
 pub struct SystemUpdate {
@@ -105,7 +107,9 @@ impl SystemUpdate {
 
         if output.status.success() {
             return Ok(());
-        }
+        } else if output.status == ExitStatus::from_raw(32256) {
+            return Err(anywho!("Permision denied"));
+        };
 
         // fallback to distrobox-host-exec
         let output = Command::new("distrobox-host-exec")
