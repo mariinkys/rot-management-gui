@@ -7,6 +7,8 @@ use iced::{Alignment, Element, Length, Subscription, Task};
 use crate::app::core::system_status::Deployment;
 use crate::app::core::utils::{reboot, reboot_pending};
 use crate::app::style::{icon_button_style, primary_button_style};
+use crate::app::widgets::spinners::circular::Circular;
+use crate::app::widgets::spinners::easing;
 use crate::app::widgets::toast::Toast;
 use crate::{fl, icons};
 
@@ -71,12 +73,21 @@ impl SystemStatus {
 
     pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
         let content: Element<Message> = match &self.state {
-            State::Loading => container(text(fl!("loading")))
-                .align_x(Alignment::Center)
-                .align_y(Alignment::Center)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into(),
+            State::Loading => container(
+                column![
+                    text(fl!("loading")),
+                    Circular::new()
+                        .easing(&easing::EMPHASIZED)
+                        .cycle_duration(std::time::Duration::from_secs_f32(5.0))
+                ]
+                .spacing(10.)
+                .align_x(Alignment::Center),
+            )
+            .align_x(Alignment::Center)
+            .align_y(Alignment::Center)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into(),
             State::PendingReboot => column![
                 Space::new(Length::Fill, Length::Fixed(35.)),
                 text(fl!("reboot-required"))

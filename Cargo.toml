@@ -27,6 +27,7 @@ iced = { git = "https://github.com/iced-rs/iced", default-features = false, feat
     "image",
     "svg",
     "debug",
+    "canvas",
 ] }
 anywho = "0.1.2"
 i18n-embed-fl = "0.10.0" # needed for fl support
@@ -38,6 +39,7 @@ ron = "0.11.0"
 dirs = "6.0.0"
 freedesktop-icons = "0.4.0"
 open = "5.3.2"
+lyon_algorithms = "1.0.16"                             # needed for spinners
 
 [dependencies.i18n-embed]
 version = "0.16.0"

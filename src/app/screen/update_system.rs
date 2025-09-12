@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Rule, Space, button, column, container, row, scrollable, text};
+use iced::widget::{Rule, Space, button, column, container, responsive, row, scrollable, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::update_system::SystemUpdate;
 use crate::app::core::utils::{reboot, reboot_pending};
 use crate::app::style::{icon_button_style, primary_button_style};
+use crate::app::widgets::spinners::circular::Circular;
+use crate::app::widgets::spinners::easing;
+use crate::app::widgets::spinners::linear::Linear;
 use crate::app::widgets::toast::Toast;
 use crate::{fl, icons};
 
@@ -133,9 +136,23 @@ impl UpdateSystem {
             .align_x(Alignment::Center),
             State::Updating => {
                 return container(
-                    column![text(fl!("updating")), text(fl!("updating-warning"))]
-                        .spacing(3.)
-                        .align_x(Alignment::Center),
+                    column![
+                        text(fl!("updating")),
+                        text(fl!("updating-warning")),
+                        responsive(|bounds| {
+                            container(
+                                Linear::new()
+                                    .easing(&easing::STANDARD_DECELERATE)
+                                    .cycle_duration(std::time::Duration::from_secs_f32(10.0))
+                                    .width(Length::Fixed(bounds.width / 2.0)),
+                            )
+                            .width(Length::Fill)
+                            .align_x(Alignment::Center)
+                            .into()
+                        })
+                    ]
+                    .spacing(3.)
+                    .align_x(Alignment::Center),
                 )
                 .align_x(Alignment::Center)
                 .align_y(Alignment::Center)
@@ -144,12 +161,21 @@ impl UpdateSystem {
                 .into();
             }
             _ => {
-                return container(text(fl!("checking-updates")))
-                    .align_x(Alignment::Center)
-                    .align_y(Alignment::Center)
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .into();
+                return container(
+                    column![
+                        text(fl!("checking-updates")),
+                        Circular::new()
+                            .easing(&easing::EMPHASIZED)
+                            .cycle_duration(std::time::Duration::from_secs_f32(5.0))
+                    ]
+                    .spacing(10.)
+                    .align_x(Alignment::Center),
+                )
+                .align_x(Alignment::Center)
+                .align_y(Alignment::Center)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
             }
         };
 

@@ -9,6 +9,8 @@ use crate::app::core::update_applications::{
 };
 use crate::app::style::{AccordionButtonPosition, icon_button_style, primary_button_style};
 use crate::app::utils::ui::{AccordionButtonStatus, AccordionIcon, accordion_button};
+use crate::app::widgets::spinners::circular::Circular;
+use crate::app::widgets::spinners::easing;
 use crate::app::widgets::toast::Toast;
 use crate::{fl, icons};
 
@@ -65,12 +67,21 @@ impl UpdateApplications {
 
     pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
         let State::Ready { applications, .. } = &self.state else {
-            return container(text(fl!("checking-updates")))
-                .align_x(Alignment::Center)
-                .align_y(Alignment::Center)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into();
+            return container(
+                column![
+                    text(fl!("checking-updates")),
+                    Circular::new()
+                        .easing(&easing::EMPHASIZED)
+                        .cycle_duration(std::time::Duration::from_secs_f32(5.0))
+                ]
+                .spacing(10.)
+                .align_x(Alignment::Center),
+            )
+            .align_x(Alignment::Center)
+            .align_y(Alignment::Center)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
         };
 
         let any_app_updating = applications
@@ -315,7 +326,6 @@ impl UpdateApplications {
                 }
             }
             Message::UpdatedSingleApplication(result) => {
-                // TODO
                 if let Err(err) = result {
                     return Action::AddToast(Toast::error_toast(err));
                 }
