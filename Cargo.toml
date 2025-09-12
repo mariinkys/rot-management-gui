@@ -1,12 +1,21 @@
 [package]
-name = "fa-management-gui"
+name = "rot-management-gui"
 version = "0.1.0"
 edition = "2024"
 
 authors = ["mariinkys"]
 license = "GPL-3.0-only"
-repository = "https://github.com/mariinkys/fa-management-gui"
-keywords = ["gui", "management", "fedora", "atomic", "linux", "silverblue"]
+repository = "https://github.com/mariinkys/rot-management-gui"
+keywords = [
+    "gui",
+    "management",
+    "fedora",
+    "atomic",
+    "linux",
+    "silverblue",
+    "rpm",
+    "ostree",
+]
 categories = ["gui", "applications"]
 
 [dependencies]

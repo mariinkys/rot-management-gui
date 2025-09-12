@@ -8,11 +8,11 @@ use crate::app::style::icon_button_style;
 use crate::{fl, icons};
 
 const AUTHOR_LINK: &str = "https://github.com/mariinkys";
-const LICENSE_LINK: &str = "https://github.com/mariinkys/fa-management-gui/blob/main/LICENSE";
-const REPOSITORY_LINK: &str = "https://github.com/mariinkys/fa-management-gui";
-const ISSUES_LINK: &str = "https://github.com/mariinkys/fa-management-gui/issues";
-const VERSION_LINK: &str = "https://github.com/mariinkys/fa-management-gui/releases";
-const README_LINK: &str = "https://github.com/mariinkys/fa-management-gui/blob/main/README.md";
+const LICENSE_LINK: &str = "https://github.com/mariinkys/rot-management-gui/blob/main/LICENSE";
+const REPOSITORY_LINK: &str = "https://github.com/mariinkys/rot-management-gui";
+const ISSUES_LINK: &str = "https://github.com/mariinkys/rot-management-gui/issues";
+const VERSION_LINK: &str = "https://github.com/mariinkys/rot-management-gui/releases";
+const README_LINK: &str = "https://github.com/mariinkys/rot-management-gui/blob/main/README.md";
 
 pub struct About {}
 

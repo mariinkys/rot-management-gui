@@ -39,7 +39,7 @@ fn main() -> iced::Result {
         size: Size::new(800., 600.),
         ..Default::default()
     })
-    .title("Fedora Atomic Management GUI")
+    .title("RPM OSTree Management GUI")
     .theme(FAManagement::theme)
     .run()
 }

@@ -883,23 +883,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fa-management-gui"
-version = "0.1.0"
-dependencies = [
- "anywho",
- "dirs 6.0.0",
- "freedesktop-icons",
- "i18n-embed",
- "i18n-embed-fl",
- "iced",
- "open",
- "ron",
- "rust-embed",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2932,6 +2915,23 @@ dependencies = [
  "serde",
  "serde_derive",
  "unicode-ident",
+]
+
+[[package]]
+name = "rot-management-gui"
+version = "0.1.0"
+dependencies = [
+ "anywho",
+ "dirs 6.0.0",
+ "freedesktop-icons",
+ "i18n-embed",
+ "i18n-embed-fl",
+ "iced",
+ "open",
+ "ron",
+ "rust-embed",
+ "serde",
+ "tokio",
 ]
 
 [[package]]

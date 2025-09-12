@@ -1,12 +1,12 @@
 <div align="center">
   <br>
   <img src="./resources/icons/hicolor/scalable/apps/icon.svg" width="150" />
-  <h1>FA Management GUI</h1>
+  <h1>RPM OSTree (ROT) Management GUI</h1>
 
-  ![GitHub License](https://img.shields.io/github/license/mariinkys/fa-management-gui)
-  ![GitHub Repo stars](https://img.shields.io/github/stars/mariinkys/fa-management-gui)
+  ![GitHub License](https://img.shields.io/github/license/mariinkys/rot-management-gui)
+  ![GitHub Repo stars](https://img.shields.io/github/stars/mariinkys/rot-management-gui)
 
-  <h3>*WIP* GUI to manage RPM-OSTree Systems (Such as Silverblue or Kinoite)</h3>
+  <h3>*WIP* GUI to manage RPMOSTree Systems (Such as Silverblue or Kinoite)</h3>
 
   <img width="700" alt="Main Page Light Mode" src="./screenshots/main-light.png"/>
 </div>
@@ -57,4 +57,4 @@ You can also help do this and more projects, [Buy me a coffee](https://www.buyme
 
 Copyright 2025 © Alex Marín
 
-Released under the terms of the [GPL-3.0](https://github.com/mariinkys/fa-management-gui/blob/main/LICENSE)
+Released under the terms of the [GPL-3.0](https://github.com/mariinkys/rot-management-gui/blob/main/LICENSE)
