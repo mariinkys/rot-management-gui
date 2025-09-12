@@ -32,8 +32,6 @@ Special thanks to Simon and Catalina for their patience and confidence to switch
 ## TODO
 
 - Layered packages management
-- Improve error handling
-- Match system update styling with system status styling
 
 ## Attributions
 
