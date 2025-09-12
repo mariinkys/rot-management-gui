@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Space, button, column, container, row, text};
+use iced::widget::{Rule, Space, button, column, container, row, scrollable, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::update_system::SystemUpdate;
@@ -83,58 +83,7 @@ impl UpdateSystem {
                                 .style(primary_button_style)
                                 .on_press(Message::Update)
                         ],
-                        container(
-                            column![
-                                row![
-                                    text(fl!("version")).font(iced::font::Font {
-                                        weight: iced::font::Weight::Bold,
-                                        ..Default::default()
-                                    }),
-                                    text(&system_update.version)
-                                ]
-                                .spacing(2.),
-                                row![
-                                    text(fl!("commit")).font(iced::font::Font {
-                                        weight: iced::font::Weight::Bold,
-                                        ..Default::default()
-                                    }),
-                                    text(&system_update.commit)
-                                ]
-                                .spacing(2.),
-                                row![
-                                    text(fl!("gpg-signature")).font(iced::font::Font {
-                                        weight: iced::font::Weight::Bold,
-                                        ..Default::default()
-                                    }),
-                                    text(&system_update.gpg_signature)
-                                ]
-                                .spacing(2.),
-                                row![
-                                    text(fl!("sec-advisories")).font(iced::font::Font {
-                                        weight: iced::font::Weight::Bold,
-                                        ..Default::default()
-                                    }),
-                                    text(
-                                        system_update
-                                            .sec_advisories
-                                            .clone()
-                                            .unwrap_or(String::from("None"))
-                                    )
-                                ]
-                                .spacing(2.),
-                                row![
-                                    text(fl!("diff")).font(iced::font::Font {
-                                        weight: iced::font::Weight::Bold,
-                                        ..Default::default()
-                                    }),
-                                    text(&system_update.diff)
-                                ]
-                                .spacing(2.)
-                            ]
-                            .spacing(3.)
-                        )
-                        .style(container::rounded_box)
-                        .padding(20.)
+                        scrollable(system_update_card(system_update))
                     ]
                     .padding(20.)
                     .spacing(5.)
@@ -280,4 +229,71 @@ impl UpdateSystem {
     pub fn subscription(&self, _now: Instant) -> Subscription<Message> {
         Subscription::none()
     }
+}
+
+fn system_update_card<'a>(system_update: &'a SystemUpdate) -> iced::Element<'a, Message> {
+    let card_header = row![
+        text(&system_update.version)
+            .width(Length::Fill)
+            .size(18)
+            .font(iced::font::Font {
+                weight: iced::font::Weight::Bold,
+                ..Default::default()
+            }),
+    ]
+    .width(Length::Fill)
+    .align_y(Alignment::Center)
+    .padding(10.);
+
+    let system_update_content = column![
+        row![
+            text(fl!("commit")).font(iced::font::Font {
+                weight: iced::font::Weight::Bold,
+                ..Default::default()
+            }),
+            text(&system_update.commit)
+        ]
+        .spacing(2.),
+        row![
+            text(fl!("gpg-signature")).font(iced::font::Font {
+                weight: iced::font::Weight::Bold,
+                ..Default::default()
+            }),
+            text(&system_update.gpg_signature)
+        ]
+        .spacing(2.),
+        row![
+            text(fl!("sec-advisories")).font(iced::font::Font {
+                weight: iced::font::Weight::Bold,
+                ..Default::default()
+            }),
+            text(
+                system_update
+                    .sec_advisories
+                    .clone()
+                    .unwrap_or(String::from("None"))
+            )
+        ]
+        .spacing(2.),
+        row![
+            text(fl!("diff")).font(iced::font::Font {
+                weight: iced::font::Weight::Bold,
+                ..Default::default()
+            }),
+            text(&system_update.diff)
+        ]
+        .spacing(2.)
+    ]
+    .spacing(3.)
+    .padding(10.);
+
+    container(column![
+        card_header,
+        Rule::horizontal(1.),
+        system_update_content
+    ])
+    .style(container::rounded_box)
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .into()
 }
