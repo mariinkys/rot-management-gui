@@ -175,6 +175,12 @@ impl FAManagement {
                     update_applications::Action::AddToast(toast) => {
                         return self.update(Message::AddToast(toast), now);
                     }
+                    update_applications::Action::AddMultipleToasts(toasts) => {
+                        for toast in toasts {
+                            self.toasts.push(toast);
+                        }
+                        return Task::none();
+                    }
                 };
             }
             Message::OpenUpdateApplications => {

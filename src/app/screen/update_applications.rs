@@ -47,6 +47,7 @@ pub enum Action {
     Back,
     Run(Task<Message>),
     AddToast(Toast),
+    AddMultipleToasts(Vec<Toast>),
 }
 
 impl UpdateApplications {
@@ -261,9 +262,28 @@ impl UpdateApplications {
                 }
             }
             Message::UpdatedAllApplications(update_results) => {
-                // TODO
-                if let Err(err) = update_results {
-                    return Action::AddToast(Toast::error_toast(err));
+                match update_results {
+                    Ok(results) => {
+                        for update_res in results {
+                            let mut failed_updates = Vec::<Toast>::new();
+                            if !update_res.success {
+                                eprintln!(
+                                    "{} failed with: {}",
+                                    &update_res.app_name,
+                                    &update_res.error_message.clone().unwrap_or_default()
+                                );
+                                failed_updates.push(Toast::error_toast(format!(
+                                    "{} failed with: {}",
+                                    &update_res.app_name,
+                                    update_res.error_message.unwrap_or_default()
+                                )));
+                            }
+                            if !failed_updates.is_empty() {
+                                return Action::AddMultipleToasts(failed_updates);
+                            }
+                        }
+                    }
+                    Err(err) => return Action::AddToast(Toast::error_toast(err)),
                 }
 
                 self.state = State::Loading;

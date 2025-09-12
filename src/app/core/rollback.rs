@@ -20,21 +20,33 @@ pub async fn rollback() -> Result<(), anywho::Error> {
     let output = Command::new("distrobox-host-exec")
         .args(["pkexec", "rpm-ostree", "rollback"])
         .output()
-        .await?;
+        .await;
 
-    if output.status.success() {
-        Ok(())
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-
-        Err(anywho!(
-            "distrobox-host-exec failed: {}",
-            if !stderr.is_empty() {
-                stderr.trim()
+    match output {
+        Ok(output) => {
+            if output.status.success() {
+                Ok(())
             } else {
-                stdout.trim()
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                let stdout = String::from_utf8_lossy(&output.stdout);
+
+                Err(anywho!(
+                    "distrobox-host-exec failed: {}",
+                    if !stderr.is_empty() {
+                        stderr.trim()
+                    } else {
+                        stdout.trim()
+                    }
+                ))
             }
-        ))
+        }
+        Err(err) => {
+            if err.kind() == tokio::io::ErrorKind::NotFound {
+                return Err(anywho!(
+                    "Command not found, are you using a RPM OSTree System?"
+                ));
+            }
+            Err(anywho!("Unknown error"))
+        }
     }
 }

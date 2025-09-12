@@ -93,43 +93,6 @@ impl SystemUpdate {
         }
     }
 
-    // /// Update the system using: sudo rpm-ostree upgrade
-    // pub async fn update() -> Result<(), anywho::Error> {
-    //     use tokio::process::Command;
-
-    //     // direct rpm-ostree first
-    //     let output = Command::new("sudo")
-    //         .args(["rpm-ostree", "upgrade"])
-    //         .output()
-    //         .await?;
-
-    //     if output.status.success() {
-    //         return Ok(());
-    //     }
-
-    //     // fallback: run with distrobox-exec
-    //     let output = Command::new("distrobox-host-exec")
-    //         .args(["sudo", "rpm-ostree", "upgrade"])
-    //         .output()
-    //         .await?;
-
-    //     if output.status.success() {
-    //         Ok(())
-    //     } else {
-    //         let stderr = String::from_utf8_lossy(&output.stderr);
-    //         let stdout = String::from_utf8_lossy(&output.stdout);
-    //         eprintln!("{}", &stderr);
-    //         Err(anywho!(
-    //             "distrobox-host-exec failed: {}",
-    //             if !stderr.is_empty() {
-    //                 stderr.trim()
-    //             } else {
-    //                 stdout.trim()
-    //             }
-    //         ))
-    //     }
-    // }
-
     /// Update the system using: pkexec rpm-ostree upgrade
     pub async fn update() -> Result<(), anywho::Error> {
         use tokio::process::Command;
@@ -148,22 +111,34 @@ impl SystemUpdate {
         let output = Command::new("distrobox-host-exec")
             .args(["pkexec", "rpm-ostree", "upgrade"])
             .output()
-            .await?;
+            .await;
 
-        if output.status.success() {
-            Ok(())
-        } else {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
-
-            Err(anywho!(
-                "distrobox-host-exec failed: {}",
-                if !stderr.is_empty() {
-                    stderr.trim()
+        match output {
+            Ok(output) => {
+                if output.status.success() {
+                    Ok(())
                 } else {
-                    stdout.trim()
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+
+                    Err(anywho!(
+                        "distrobox-host-exec failed: {}",
+                        if !stderr.is_empty() {
+                            stderr.trim()
+                        } else {
+                            stdout.trim()
+                        }
+                    ))
                 }
-            ))
+            }
+            Err(err) => {
+                if err.kind() == tokio::io::ErrorKind::NotFound {
+                    return Err(anywho!(
+                        "Command not found, are you using a RPM OSTree System?"
+                    ));
+                }
+                Err(anywho!("Unknown error"))
+            }
         }
     }
 }
