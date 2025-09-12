@@ -152,6 +152,8 @@ impl UpdateSystem {
                         })
                     ]
                     .spacing(3.)
+                    .height(Length::Shrink)
+                    .width(Length::Shrink)
                     .align_x(Alignment::Center),
                 )
                 .align_x(Alignment::Center)
