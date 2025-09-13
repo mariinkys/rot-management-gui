@@ -6,7 +6,7 @@ use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::update_system::SystemUpdate;
 use crate::app::core::utils::{reboot, reboot_pending};
-use crate::app::style::{icon_button_style, primary_button_style};
+use crate::app::style::{icon_button_style, icon_svg_style, primary_button_style};
 use crate::app::widgets::spinners::circular::Circular;
 use crate::app::widgets::spinners::easing;
 use crate::app::widgets::spinners::linear::Linear;
@@ -187,7 +187,7 @@ impl UpdateSystem {
             .height(Length::Fill);
 
         let back_button = container(
-            button(icons::get_icon("go-previous-symbolic", 18))
+            button(icons::get_icon("go-previous-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::Back)
                 .style(icon_button_style),
         )
@@ -198,7 +198,7 @@ impl UpdateSystem {
         .padding(10.);
 
         let refresh_button = container(
-            button(icons::get_icon("view-refresh-symbolic", 18))
+            button(icons::get_icon("view-refresh-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::CheckReboot)
                 .style(icon_button_style),
         )

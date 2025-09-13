@@ -2,6 +2,15 @@
 
 use iced::{Theme, widget::button};
 
+pub fn icon_svg_style(
+    theme: &Theme,
+    _status: iced::widget::svg::Status,
+) -> iced::widget::svg::Style {
+    iced::widget::svg::Style {
+        color: Some(theme.palette().text),
+    }
+}
+
 pub fn icon_button_style(theme: &Theme, status: button::Status) -> button::Style {
     let mut style = button::subtle(theme, status);
     style.border.radius = iced::border::Radius {

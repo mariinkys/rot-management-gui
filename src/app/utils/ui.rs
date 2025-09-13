@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use crate::{
-    app::style::{AccordionButtonPosition, accordion_button_style},
+    app::style::{AccordionButtonPosition, accordion_button_style, icon_svg_style},
     icons,
 };
 use iced::{
@@ -83,8 +83,10 @@ where
             container(
                 svg::Svg::new(handle)
                     .width(iced::Length::Fixed(40.))
-                    .height(iced::Length::Fixed(40.)),
+                    .height(iced::Length::Fixed(40.))
+                    .style(icon_svg_style),
             )
+            .style(container::transparent)
             .width(Length::Fixed(40.))
             .height(Length::Fixed(40.))
             .align_y(Alignment::Center)

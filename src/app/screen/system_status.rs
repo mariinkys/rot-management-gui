@@ -6,7 +6,7 @@ use iced::{Alignment, Element, Length, Subscription, Task};
 
 use crate::app::core::system_status::Deployment;
 use crate::app::core::utils::{reboot, reboot_pending};
-use crate::app::style::{icon_button_style, primary_button_style};
+use crate::app::style::{icon_button_style, icon_svg_style, primary_button_style};
 use crate::app::widgets::spinners::circular::Circular;
 use crate::app::widgets::spinners::easing;
 use crate::app::widgets::toast::Toast;
@@ -173,7 +173,7 @@ impl SystemStatus {
             .height(Length::Fill);
 
         let back_button = container(
-            button(icons::get_icon("go-previous-symbolic", 18))
+            button(icons::get_icon("go-previous-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::Back)
                 .style(icon_button_style),
         )
@@ -184,7 +184,7 @@ impl SystemStatus {
         .padding(10.);
 
         let refresh_button = container(
-            button(icons::get_icon("view-refresh-symbolic", 18))
+            button(icons::get_icon("view-refresh-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::CheckReboot)
                 .style(icon_button_style),
         )
@@ -275,7 +275,7 @@ impl SystemStatus {
 fn deployment_card<'a>(deployment: &'a Deployment) -> Element<'a, Message> {
     let pin_button = match deployment.is_pinned {
         true => tooltip(
-            button(icons::get_icon("unpin-symbolic", 18))
+            button(icons::get_icon("unpin-symbolic", 18).style(icon_svg_style))
                 .style(icon_button_style)
                 .width(Length::Shrink)
                 .on_press(Message::UnpinDeployment(deployment.clone())),
@@ -285,7 +285,7 @@ fn deployment_card<'a>(deployment: &'a Deployment) -> Element<'a, Message> {
             tooltip::Position::Top,
         ),
         false => tooltip(
-            button(icons::get_icon("pin-symbolic", 18))
+            button(icons::get_icon("pin-symbolic", 18).style(icon_svg_style))
                 .style(icon_button_style)
                 .width(Length::Shrink)
                 .on_press(Message::PinDeployment(deployment.clone())),

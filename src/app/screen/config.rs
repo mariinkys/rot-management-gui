@@ -5,7 +5,7 @@ use iced::widget::{button, column, container, pick_list, text};
 use iced::{Alignment, Length, Subscription, Task, Theme};
 
 use crate::app::core::config::ApplicationTheme;
-use crate::app::style::icon_button_style;
+use crate::app::style::{icon_button_style, icon_svg_style};
 use crate::{fl, icons};
 
 pub struct Config {
@@ -76,7 +76,7 @@ impl Config {
             .height(Length::Fill);
 
         let back_button = container(
-            button(icons::get_icon("go-previous-symbolic", 18))
+            button(icons::get_icon("go-previous-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::Back)
                 .style(icon_button_style),
         )

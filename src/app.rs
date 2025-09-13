@@ -9,7 +9,7 @@ use crate::app::core::config::Config;
 use crate::app::screen::{
     Screen, about, config, rollback, system_status, update_applications, update_system,
 };
-use crate::app::style::{AccordionButtonPosition, icon_button_style};
+use crate::app::style::{AccordionButtonPosition, icon_button_style, icon_svg_style};
 use crate::app::utils::ui::{
     AccordionButtonStatus, AccordionIcon, PossibleBundledSVGs, accordion_button,
 };
@@ -431,7 +431,7 @@ impl FAManagement {
             .height(Length::Fill);
 
         let config_button = container(
-            button(icons::get_icon("emblem-system-symbolic", 18))
+            button(icons::get_icon("emblem-system-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::OpenConfig)
                 .style(icon_button_style),
         )
@@ -442,7 +442,7 @@ impl FAManagement {
         .padding(10.);
 
         let about_button = container(
-            button(icons::get_icon("help-info-symbolic", 18))
+            button(icons::get_icon("help-info-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::OpenAbout)
                 .style(icon_button_style),
         )
