@@ -7,7 +7,9 @@ use iced::{Alignment, Length, Subscription, Task};
 use crate::app::core::update_applications::{
     Application, ApplicationStatus, UpdateError, UpdateResult,
 };
-use crate::app::style::{AccordionButtonPosition, icon_button_style, primary_button_style};
+use crate::app::style::{
+    AccordionButtonPosition, icon_button_style, icon_svg_style, primary_button_style,
+};
 use crate::app::utils::ui::{AccordionButtonStatus, AccordionIcon, accordion_button};
 use crate::app::widgets::spinners::circular::Circular;
 use crate::app::widgets::spinners::easing;
@@ -200,7 +202,7 @@ impl UpdateApplications {
             .height(Length::Fill);
 
         let back_button = container(
-            button(icons::get_icon("go-previous-symbolic", 18))
+            button(icons::get_icon("go-previous-symbolic", 18).style(icon_svg_style))
                 .on_press_maybe(if any_app_updating {
                     None
                 } else {
@@ -215,7 +217,7 @@ impl UpdateApplications {
         .padding(10.);
 
         let refresh_button = container(
-            button(icons::get_icon("view-refresh-symbolic", 18))
+            button(icons::get_icon("view-refresh-symbolic", 18).style(icon_svg_style))
                 .on_press_maybe(if any_app_updating {
                     None
                 } else {

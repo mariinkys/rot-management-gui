@@ -4,7 +4,7 @@ use iced::time::Instant;
 use iced::widget::{button, column, container, mouse_area, row, text};
 use iced::{Alignment, Length, Subscription, Task};
 
-use crate::app::style::icon_button_style;
+use crate::app::style::{icon_button_style, icon_svg_style};
 use crate::{fl, icons};
 
 const AUTHOR_LINK: &str = "https://github.com/mariinkys";
@@ -139,7 +139,7 @@ impl About {
             .height(Length::Fill);
 
         let back_button = container(
-            button(icons::get_icon("go-previous-symbolic", 18))
+            button(icons::get_icon("go-previous-symbolic", 18).style(icon_svg_style))
                 .on_press(Message::Back)
                 .style(icon_button_style),
         )
