@@ -8,7 +8,8 @@
 
   <h3>*WIP* GUI to manage RPMOSTree Systems (Such as Silverblue or Kinoite)</h3>
 
-  <img width="700" alt="Main Page Light Mode" src="./screenshots/main-light.png"/>
+  <img width="350" alt="Main Page Light Mode" src="./screenshots/main-light.png"/>
+  <img width="350" alt="Main Page Dark Mode" src="./screenshots/main-dark.png"/>
 </div>
 
 ## Notes
