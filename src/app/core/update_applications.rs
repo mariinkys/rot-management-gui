@@ -8,10 +8,16 @@ use std::process::Command;
 pub struct Application {
     pub name: String,
     pub app_id: String,
-    pub icon: Option<String>,
+    pub icon: Option<AppIcon>,
     pub current_version: String,
     pub latest_version: String,
     pub application_status: ApplicationStatus,
+}
+
+#[derive(Debug, Clone)]
+pub enum AppIcon {
+    Svg { path: String },
+    Image { path: String },
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -271,14 +277,24 @@ impl Application {
         Ok(app_id.to_string())
     }
 
-    fn get_app_icon(app_id: &str) -> Option<String> {
+    fn get_app_icon(app_id: &str) -> Option<AppIcon> {
         freedesktop_icons::lookup(app_id)
             .force_svg()
             .with_cache()
             .find()
             .and_then(|path| {
-                if path.extension().and_then(|ext| ext.to_str()) == Some("svg") {
-                    Some(path.to_string_lossy().into_owned())
+                if let Some(ext) = path.extension().and_then(|ext| ext.to_str()) {
+                    match ext {
+                        "svg" => Some(AppIcon::Svg {
+                            path: path.to_string_lossy().into_owned(),
+                        }),
+                        "png" | "jpg" | "jpeg" | "gif" | "bmp" | "ico" | "tiff" => {
+                            Some(AppIcon::Image {
+                                path: path.to_string_lossy().into_owned(),
+                            })
+                        }
+                        _ => None,
+                    }
                 } else {
                     None
                 }

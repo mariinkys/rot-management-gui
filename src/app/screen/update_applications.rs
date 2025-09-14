@@ -122,9 +122,18 @@ impl UpdateApplications {
                         AccordionButtonStatus::Enabled
                     };
 
-                let icon = if let Some(svg_path) = &app.icon {
-                    AccordionIcon::Path {
-                        svg_path: svg_path.to_string(),
+                let icon = if let Some(app_icon) = &app.icon {
+                    match app_icon {
+                        crate::app::core::update_applications::AppIcon::Svg { path } => {
+                            AccordionIcon::SvgPath {
+                                svg_path: path.to_string(),
+                            }
+                        }
+                        crate::app::core::update_applications::AppIcon::Image { path } => {
+                            AccordionIcon::ImgPath {
+                                img_path: path.to_string(),
+                            }
+                        }
                     }
                 } else {
                     AccordionIcon::None

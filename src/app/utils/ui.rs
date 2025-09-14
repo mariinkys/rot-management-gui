@@ -6,7 +6,7 @@ use crate::{
 };
 use iced::{
     Alignment, Length, Renderer, Theme,
-    widget::{Button, Space, button, column, container, row, svg, text},
+    widget::{Button, Space, button, column, container, image, row, svg, text},
 };
 use std::fmt::Debug;
 
@@ -42,7 +42,8 @@ impl PossibleBundledSVGs {
 
 pub enum AccordionIcon {
     None,
-    Path { svg_path: String },
+    SvgPath { svg_path: String },
+    ImgPath { img_path: String },
     BundledSvg { svg: PossibleBundledSVGs },
 }
 
@@ -63,15 +64,27 @@ where
         Some(message)
     };
 
-    // TODO: Icon Lookup does not work inside a Distrobox, I'll check if this works later
     let icon: iced::Element<'_, Message> = match icon {
         AccordionIcon::None => Space::new(0, 0).into(),
-        AccordionIcon::Path { svg_path } => {
+        AccordionIcon::SvgPath { svg_path } => {
             let handle = svg::Handle::from_path(svg_path);
             container(
                 svg::Svg::new(handle)
                     .width(iced::Length::Fixed(50.))
                     .height(iced::Length::Fixed(50.)),
+            )
+            .width(Length::Fixed(50.))
+            .height(Length::Fixed(50.))
+            .align_y(Alignment::Center)
+            .into()
+        }
+        AccordionIcon::ImgPath { img_path } => {
+            let handle = image::Handle::from_path(img_path);
+            container(
+                image::Image::new(handle)
+                    .width(iced::Length::Fixed(50.))
+                    .height(iced::Length::Fixed(50.))
+                    .content_fit(iced::ContentFit::Contain),
             )
             .width(Length::Fixed(50.))
             .height(Length::Fixed(50.))
