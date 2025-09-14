@@ -5,7 +5,7 @@ use iced::widget::{Space, button, column, container, responsive, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::rollback::rollback;
-use crate::app::core::utils::{reboot, reboot_pending};
+use crate::app::core::{reboot, reboot_pending};
 use crate::app::style::{icon_button_style, icon_svg_style, primary_button_style};
 use crate::app::widgets::spinners::circular::Circular;
 use crate::app::widgets::spinners::easing;

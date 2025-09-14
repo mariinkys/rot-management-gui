@@ -8,34 +8,32 @@ use std::process::ExitStatus;
 pub async fn rollback() -> Result<(), anywho::Error> {
     use tokio::process::Command;
 
-    // pkexec first
-    let output = Command::new("pkexec")
-        .args(["rpm-ostree", "rollback"])
-        .output()
-        .await?;
-
-    if output.status.success() {
-        return Ok(());
-    } else if output.status == ExitStatus::from_raw(32256) {
-        return Err(anywho!("Permision denied"));
+    let output = if super::is_running_in_distrobox() {
+        Command::new("distrobox-host-exec")
+            .args(["pkexec", "rpm-ostree", "rollback"])
+            .output()
+            .await
+    } else {
+        Command::new("pkexec")
+            .args(["rpm-ostree", "rollback"])
+            .output()
+            .await
     };
-
-    // fallback to distrobox-host-exec
-    let output = Command::new("distrobox-host-exec")
-        .args(["pkexec", "rpm-ostree", "rollback"])
-        .output()
-        .await;
 
     match output {
         Ok(output) => {
             if output.status.success() {
                 Ok(())
             } else {
+                if output.status == ExitStatus::from_raw(32256) {
+                    return Err(anywho!("Permision denied"));
+                }
+
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
                 Err(anywho!(
-                    "distrobox-host-exec failed: {}",
+                    "{}",
                     if !stderr.is_empty() {
                         stderr.trim()
                     } else {
@@ -44,13 +42,6 @@ pub async fn rollback() -> Result<(), anywho::Error> {
                 ))
             }
         }
-        Err(err) => {
-            if err.kind() == tokio::io::ErrorKind::NotFound {
-                return Err(anywho!(
-                    "Command not found, are you using a RPM OSTree System?"
-                ));
-            }
-            Err(anywho!("Unknown error"))
-        }
+        Err(err) => Err(anywho!("{}", err)),
     }
 }

@@ -16,24 +16,21 @@ impl SystemUpdate {
     pub async fn check() -> Option<SystemUpdate> {
         use tokio::process::Command;
 
-        // try direct rpm-ostree if not in distrobox
-        let output = match Command::new("rpm-ostree")
-            .args(["upgrade", "--check"])
-            .output()
-            .await
-        {
+        let output = if super::is_running_in_distrobox() {
+            Command::new("distrobox-host-exec")
+                .args(["rpm-ostree", "upgrade", "--check"])
+                .output()
+                .await
+        } else {
+            Command::new("rpm-ostree")
+                .args(["upgrade", "--check"])
+                .output()
+                .await
+        };
+
+        let output = match output {
             Ok(output) => output,
-            Err(_) => {
-                // fallback: use distrobox-host-exec to run commands on the host system from within distrobox
-                match Command::new("distrobox-host-exec")
-                    .args(["rpm-ostree", "upgrade", "--check"])
-                    .output()
-                    .await
-                {
-                    Ok(output) => output,
-                    Err(_) => return None,
-                }
-            }
+            Err(_err) => return None,
         };
 
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -99,34 +96,32 @@ impl SystemUpdate {
     pub async fn update() -> Result<(), anywho::Error> {
         use tokio::process::Command;
 
-        // pkexec first
-        let output = Command::new("pkexec")
-            .args(["rpm-ostree", "upgrade"])
-            .output()
-            .await?;
-
-        if output.status.success() {
-            return Ok(());
-        } else if output.status == ExitStatus::from_raw(32256) {
-            return Err(anywho!("Permision denied"));
+        let output = if super::is_running_in_distrobox() {
+            Command::new("distrobox-host-exec")
+                .args(["pkexec", "rpm-ostree", "upgrade"])
+                .output()
+                .await
+        } else {
+            Command::new("pkexec")
+                .args(["rpm-ostree", "upgrade"])
+                .output()
+                .await
         };
-
-        // fallback to distrobox-host-exec
-        let output = Command::new("distrobox-host-exec")
-            .args(["pkexec", "rpm-ostree", "upgrade"])
-            .output()
-            .await;
 
         match output {
             Ok(output) => {
                 if output.status.success() {
                     Ok(())
                 } else {
+                    if output.status == ExitStatus::from_raw(32256) {
+                        return Err(anywho!("Permision denied"));
+                    }
+
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     let stdout = String::from_utf8_lossy(&output.stdout);
 
                     Err(anywho!(
-                        "distrobox-host-exec failed: {}",
+                        "{}",
                         if !stderr.is_empty() {
                             stderr.trim()
                         } else {
@@ -135,14 +130,7 @@ impl SystemUpdate {
                     ))
                 }
             }
-            Err(err) => {
-                if err.kind() == tokio::io::ErrorKind::NotFound {
-                    return Err(anywho!(
-                        "Command not found, are you using a RPM OSTree System?"
-                    ));
-                }
-                Err(anywho!("Unknown error"))
-            }
+            Err(err) => Err(anywho!("{}", err)),
         }
     }
 }
