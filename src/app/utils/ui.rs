@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use crate::{
-    app::style::{AccordionButtonPosition, accordion_button_style, icon_svg_style},
+    app::{
+        style::{AccordionButtonPosition, accordion_button_style, icon_svg_style},
+        widgets::spinners::{circular::Circular, easing},
+    },
     icons,
 };
 use iced::{
@@ -54,6 +57,7 @@ pub fn accordion_button<'a, Message>(
     icon: AccordionIcon,
     message: Message,
     button_status: AccordionButtonStatus,
+    show_spinner: bool,
 ) -> Button<'a, Message, Theme, Renderer>
 where
     Message: Clone + Debug + 'a,
@@ -107,6 +111,15 @@ where
         }
     };
 
+    let spinner: iced::Element<'_, Message> = if show_spinner {
+        Circular::new()
+            .easing(&easing::EMPHASIZED)
+            .cycle_duration(std::time::Duration::from_secs_f32(5.0))
+            .into()
+    } else {
+        Space::new(0, 0).into()
+    };
+
     button(
         row![
             icon,
@@ -127,11 +140,12 @@ where
                 ]
                 .spacing(2.)
                 .height(Length::Shrink)
-                .width(Length::Shrink)
+                .width(Length::Fill)
             )
             .height(Length::Fill)
-            .width(Length::Shrink)
+            .width(Length::Fill)
             .align_y(Alignment::Center),
+            spinner,
         ]
         .spacing(10.)
         .height(Length::Fill)

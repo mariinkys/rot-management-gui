@@ -382,6 +382,7 @@ impl FAManagement {
                 },
                 Message::OpenUpdateSystem,
                 AccordionButtonStatus::Enabled,
+                false,
             ),
             accordion_button(
                 AccordionButtonPosition::Middle,
@@ -392,6 +393,7 @@ impl FAManagement {
                 },
                 Message::OpenUpdateApplications,
                 AccordionButtonStatus::Enabled,
+                false,
             ),
             accordion_button(
                 AccordionButtonPosition::Middle,
@@ -402,6 +404,7 @@ impl FAManagement {
                 },
                 Message::OpenRollback,
                 AccordionButtonStatus::Enabled,
+                false,
             ),
             accordion_button(
                 AccordionButtonPosition::Bottom,
@@ -412,6 +415,7 @@ impl FAManagement {
                 },
                 Message::OpenSystemStatus,
                 AccordionButtonStatus::Enabled,
+                false,
             )
         ]
         .spacing(0.)

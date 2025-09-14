@@ -139,6 +139,8 @@ impl UpdateApplications {
                     AccordionIcon::None
                 };
 
+                let show_spinner = app.application_status == ApplicationStatus::Updating;
+
                 if index == 0 {
                     applications_accordion = applications_accordion.push(accordion_button(
                         AccordionButtonPosition::Top,
@@ -150,6 +152,7 @@ impl UpdateApplications {
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
+                        show_spinner,
                     ));
                 } else if index == applications.len() {
                     applications_accordion = applications_accordion.push(accordion_button(
@@ -162,6 +165,7 @@ impl UpdateApplications {
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
+                        show_spinner,
                     ));
                 } else {
                     applications_accordion = applications_accordion.push(accordion_button(
@@ -174,6 +178,7 @@ impl UpdateApplications {
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
+                        show_spinner,
                     ));
                 }
             }
