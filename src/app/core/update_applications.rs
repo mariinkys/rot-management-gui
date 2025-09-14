@@ -71,9 +71,26 @@ impl Application {
 
     /// Get all installed Flatpak applications with their versions
     async fn get_installed_applications() -> Result<HashMap<String, String>, anywho::Error> {
-        let output = Command::new("flatpak")
-            .args(["list", "--app", "--columns=application,version"])
-            .output()?;
+        let output = if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args([
+                    "--host",
+                    "flatpak",
+                    "list",
+                    "--app",
+                    "--columns=application,version",
+                ])
+                .output()
+        } else {
+            Command::new("flatpak")
+                .args(["list", "--app", "--columns=application,version"])
+                .output()
+        };
+
+        let output = match output {
+            Ok(output) => output,
+            Err(err) => return Err(anywho!("{}", err)),
+        };
 
         if !output.status.success() {
             return Err(anywho!(
@@ -128,15 +145,29 @@ impl Application {
                 let all_updates_task = task::spawn_blocking({
                     let installation = installation.clone();
                     move || {
-                        Command::new("flatpak")
-                            .args([
-                                "remote-ls",
-                                &installation,
-                                "--updates",
-                                "--app",
-                                "--columns=application,version",
-                            ])
-                            .output()
+                        if super::is_flatpak() {
+                            Command::new("flatpak-spawn")
+                                .args([
+                                    "--host",
+                                    "flatpak",
+                                    "remote-ls",
+                                    &installation,
+                                    "--updates",
+                                    "--app",
+                                    "--columns=application,version",
+                                ])
+                                .output()
+                        } else {
+                            Command::new("flatpak")
+                                .args([
+                                    "remote-ls",
+                                    &installation,
+                                    "--updates",
+                                    "--app",
+                                    "--columns=application,version",
+                                ])
+                                .output()
+                        }
                     }
                 });
 
@@ -144,20 +175,37 @@ impl Application {
                 let updatable_apps_task = task::spawn_blocking({
                     let installation = installation.clone();
                     move || {
-                        Command::new("flatpak")
-                            .args(["update", &installation])
-                            .stdin(std::process::Stdio::piped())
-                            .stdout(std::process::Stdio::piped())
-                            .stderr(std::process::Stdio::piped())
-                            .spawn()
-                            .and_then(|mut child| {
-                                // send 'n' to decline the update, so we just get the list
-                                if let Some(mut stdin) = child.stdin.take() {
-                                    use std::io::Write;
-                                    let _ = stdin.write_all(b"n\n");
-                                }
-                                child.wait_with_output()
-                            })
+                        if super::is_flatpak() {
+                            Command::new("flatpak-spawn")
+                                .args(["--host", "flatpak", "update", &installation])
+                                .stdin(std::process::Stdio::piped())
+                                .stdout(std::process::Stdio::piped())
+                                .stderr(std::process::Stdio::piped())
+                                .spawn()
+                                .and_then(|mut child| {
+                                    // send 'n' to decline the update, so we just get the list
+                                    if let Some(mut stdin) = child.stdin.take() {
+                                        use std::io::Write;
+                                        let _ = stdin.write_all(b"n\n");
+                                    }
+                                    child.wait_with_output()
+                                })
+                        } else {
+                            Command::new("flatpak")
+                                .args(["update", &installation])
+                                .stdin(std::process::Stdio::piped())
+                                .stdout(std::process::Stdio::piped())
+                                .stderr(std::process::Stdio::piped())
+                                .spawn()
+                                .and_then(|mut child| {
+                                    // send 'n' to decline the update, so we just get the list
+                                    if let Some(mut stdin) = child.stdin.take() {
+                                        use std::io::Write;
+                                        let _ = stdin.write_all(b"n\n");
+                                    }
+                                    child.wait_with_output()
+                                })
+                        }
                     }
                 });
 
@@ -255,9 +303,15 @@ impl Application {
 
     /// Get the display name for an application
     async fn get_app_display_name(app_id: &str) -> Result<String, anywho::Error> {
-        let output = Command::new("flatpak")
-            .args(["info", "--show-metadata", app_id])
-            .output()?;
+        let output = if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args(["--host", "flatpak", "info", "--show-metadata", app_id])
+                .output()?
+        } else {
+            Command::new("flatpak")
+                .args(["info", "--show-metadata", app_id])
+                .output()?
+        };
 
         if !output.status.success() {
             return Ok(app_id.to_string()); // fallback to app ID
@@ -303,10 +357,17 @@ impl Application {
 
     /// Update a specific application
     pub async fn update(app_id: String) -> Result<(), UpdateError> {
-        let output = Command::new("flatpak")
-            .args(["update", "-y", &app_id])
-            .output()
-            .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?;
+        let output = if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args(["--host", "flatpak", "update", "-y", &app_id])
+                .output()
+                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
+        } else {
+            Command::new("flatpak")
+                .args(["update", "-y", &app_id])
+                .output()
+                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
+        };
 
         if !output.status.success() {
             let error_msg = String::from_utf8_lossy(&output.stderr);
@@ -327,10 +388,17 @@ impl Application {
         let mut results = Vec::new();
 
         // update all at once
-        let output = Command::new("flatpak")
-            .args(["update", "-y"])
-            .output()
-            .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?;
+        let output = if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args(["--host", "flatpak", "update", "-y"])
+                .output()
+                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
+        } else {
+            Command::new("flatpak")
+                .args(["update", "-y"])
+                .output()
+                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
+        };
 
         if output.status.success() {
             for app in apps_to_update {
