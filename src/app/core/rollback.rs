@@ -13,6 +13,11 @@ pub async fn rollback() -> Result<(), anywho::Error> {
             .args(["pkexec", "rpm-ostree", "rollback"])
             .output()
             .await
+    } else if super::is_flatpak() {
+        Command::new("flatpak-spawn")
+            .args(["--host", "pkexec", "rpm-ostree", "rollback"])
+            .output()
+            .await
     } else {
         Command::new("pkexec")
             .args(["rpm-ostree", "rollback"])

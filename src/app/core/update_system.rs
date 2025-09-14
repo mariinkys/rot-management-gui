@@ -21,6 +21,11 @@ impl SystemUpdate {
                 .args(["rpm-ostree", "upgrade", "--check"])
                 .output()
                 .await
+        } else if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args(["--host", "rpm-ostree", "upgrade", "--check"])
+                .output()
+                .await
         } else {
             Command::new("rpm-ostree")
                 .args(["upgrade", "--check"])
@@ -99,6 +104,11 @@ impl SystemUpdate {
         let output = if super::is_running_in_distrobox() {
             Command::new("distrobox-host-exec")
                 .args(["pkexec", "rpm-ostree", "upgrade"])
+                .output()
+                .await
+        } else if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args(["--host", "pkexec", "rpm-ostree", "upgrade"])
                 .output()
                 .await
         } else {

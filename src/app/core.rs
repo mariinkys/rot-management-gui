@@ -8,6 +8,11 @@ pub mod system_status;
 pub mod update_applications;
 pub mod update_system;
 
+/// Checks if the application is running inside a flatpak
+fn is_flatpak() -> bool {
+    std::env::var("FLATPAK_ID").is_ok()
+}
+
 /// Checks if the application is running inside a toolbox/distrobox container
 pub fn is_running_in_distrobox() -> bool {
     use std::env;
@@ -41,23 +46,25 @@ pub fn is_running_in_distrobox() -> bool {
 pub async fn reboot_pending() -> bool {
     use tokio::process::Command;
 
-    let output = match Command::new("rpm-ostree").args(["status"]).output().await {
-        Ok(output) => output,
-        Err(_) => {
-            match Command::new("distrobox-host-exec")
-                .args(["rpm-ostree", "status"])
-                .output()
-                .await
-            {
-                Ok(output) => output,
-                Err(_) => return false,
-            }
-        }
+    let output = if is_running_in_distrobox() {
+        Command::new("distrobox-host-exec")
+            .args(["rpm-ostree", "status"])
+            .output()
+            .await
+    } else if is_flatpak() {
+        Command::new("flatpak-spawn")
+            .args(["--host", "rpm-ostree", "status"])
+            .output()
+            .await
+    } else {
+        Command::new("rpm-ostree").args(["status"]).output().await
     };
 
-    if !output.status.success() {
-        return false;
-    }
+    // TODO: Maybe we should return an error here? not a bool
+    let output = match output {
+        Ok(output) => output,
+        Err(_err) => return false,
+    };
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -107,26 +114,23 @@ pub async fn reboot_pending() -> bool {
 pub async fn reboot() -> Result<(), anywho::Error> {
     use tokio::process::Command;
 
-    let in_distrobox = std::env::var("DISTROBOX_ENTER_PATH").is_ok()
-        || std::path::Path::new("/run/.containerenv").exists()
-        || std::path::Path::new("/.dockerenv").exists();
-
-    let output = if in_distrobox {
+    let output = if is_running_in_distrobox() {
         Command::new("distrobox-host-exec")
             .args(["systemctl", "reboot"])
             .output()
-            .await?
+            .await
+    } else if is_flatpak() {
+        Command::new("flatpak-spawn")
+            .args(["--host", "systemctl", "reboot"])
+            .output()
+            .await
     } else {
-        match Command::new("systemctl").args(["reboot"]).output().await {
-            Ok(output) => output,
-            Err(_) => {
-                // fallback to distrobox-host-exec if systemctl fails
-                Command::new("distrobox-host-exec")
-                    .args(["systemctl", "reboot"])
-                    .output()
-                    .await?
-            }
-        }
+        Command::new("systemctl").args(["reboot"]).output().await
+    };
+
+    let output = match output {
+        Ok(output) => output,
+        Err(err) => return Err(anywho!("{}", err)),
     };
 
     // if reboot is successful, this code may never be reached

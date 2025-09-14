@@ -23,6 +23,11 @@ impl Deployment {
                 .args(["rpm-ostree", "status"])
                 .output()
                 .await
+        } else if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args(["--host", "rpm-ostree", "status"])
+                .output()
+                .await
         } else {
             Command::new("rpm-ostree").args(["status"]).output().await
         };
@@ -152,6 +157,18 @@ impl Deployment {
                 ])
                 .output()
                 .await
+        } else if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args([
+                    "--host",
+                    "pkexec",
+                    "ostree",
+                    "admin",
+                    "pin",
+                    &deployment_index.to_string(),
+                ])
+                .output()
+                .await
         } else {
             Command::new("pkexec")
                 .args(["ostree", "admin", "pin", &deployment_index.to_string()])
@@ -191,6 +208,19 @@ impl Deployment {
         let output = if super::is_running_in_distrobox() {
             Command::new("distrobox-host-exec")
                 .args([
+                    "pkexec",
+                    "ostree",
+                    "admin",
+                    "pin",
+                    "--unpin",
+                    &deployment_index.to_string(),
+                ])
+                .output()
+                .await
+        } else if super::is_flatpak() {
+            Command::new("flatpak-spawn")
+                .args([
+                    "--host",
                     "pkexec",
                     "ostree",
                     "admin",
