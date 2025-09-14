@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>dev.mariinkys.RotManagementGui</id>
+    <developer id="dev.mariinkys">
+        <name>mariinkys</name>
+    </developer>
+    <url type="homepage">https://github.com/mariinkys/rot-management-gui</url>
+    <url type="bugtracker">https://github.com/mariinkys/rot-management-gui/issues</url>
+    <url type="donation">https://buymeacoffee.com/mariinkys</url>
+
+    <name>ROT Management GUI</name>
+    <summary>A GUI to manage RPM-OSTree Systems</summary>
+
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-only</project_license>
+
+    <description>
+        <p>ROT Management GUI is a user-friendly graphical interface for managing RPM-OSTree
+            systems, designed to help users who are not experienced with the command line interface
+            maintain their atomic Linux distributions like Fedora Silverblue and Kinoite.</p>
+        <p><strong>Important:</strong> For this app to work correctly you MUST disable automatic
+            updates in GNOME Software/KDE Software Update. Check this in GNOME Software -
+            Preferences or KDE Settings - Software Update.</p>
+        <ul>
+            <li>Update your system and Flatpak applications</li>
+            <li>Rollback your system in case anything goes wrong</li>
+            <li>Pin and unpin deployments</li>
+            <li>View all your system deployments</li>
+        </ul>
+    </description>
+
+    <icon type="remote" height="256" width="256">
+        https://raw.githubusercontent.com/mariinkys/rot-management-gui/main/resources/icons/hicolor/scalable/apps/icon.svg</icon>
+    <launchable type="desktop-id">dev.mariinkys.RotManagementGui.desktop</launchable>
+    <content_rating type="oars-1.1" />
+
+    <screenshots>
+        <screenshot type="default" xml:lang="en">
+            <image>
+                https://raw.githubusercontent.com/mariinkys/rot-management-gui/main/screenshots/main-light.png</image>
+            <caption>Main Page (Light)</caption>
+        </screenshot>
+        <screenshot xml:lang="en">
+            <image>
+                https://raw.githubusercontent.com/mariinkys/rot-management-gui/main/screenshots/main-dark.png</image>
+            <caption>Main Page (Dark)</caption>
+        </screenshot>
+    </screenshots>
+
+    <branding>
+        <color type="primary" scheme_preference="light">#2563EB</color>
+        <color type="primary" scheme_preference="dark">#93C5FD</color>
+    </branding>
+
+    <categories>
+        <category>System</category>
+        <category>Settings</category>
+        <category>PackageManager</category>
+    </categories>
+
+    <keywords>
+        <keyword>rpm</keyword>
+        <keyword>ostree</keyword>
+        <keyword>system</keyword>
+        <keyword>management</keyword>
+        <keyword>package</keyword>
+        <keyword>update</keyword>
+        <keyword>overlay</keyword>
+        <keyword>silverblue</keyword>
+        <keyword>kinoite</keyword>
+        <keyword>immutable</keyword>
+        <keyword>atomic</keyword>
+    </keywords>
+
+    <releases>
+        <release version="0.1.0" date="2025-09-15">
+            <description>
+                <p>First stable release</p>
+                <p>Update your System</p>
+                <p>Update your Flatpak applications</p>
+                <p>Rollback your system in case anything goes wrong</p>
+                <p>Pin and Unpin deployments, view all your deployments...</p>
+            </description>
+        </release>
+    </releases>
+</component>

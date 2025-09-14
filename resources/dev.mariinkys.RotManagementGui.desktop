@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=ROT Management GUI
+Comment=A GUI to manage RPM-OSTree Systems
+Exec=rot-management-gui %F
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=dev.mariinkys.RotManagementGui
+Categories=Settings;System;PackageManager;
+Keywords=rpm;ostree;system;management;package;update;overlay;silverblue;kinoite;immutable;atomic;bazzite;
