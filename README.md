@@ -52,7 +52,7 @@ Check out my [other projects](https://github.com/mariinkys)
 
 You can also help do this and more projects, [Buy me a coffee](https://www.buymeacoffee.com/mariinkys)
 
-# Copyright and Licensing
+## Copyright and Licensing
 
 Copyright 2025 © Alex Marín
 
