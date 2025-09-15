@@ -2,6 +2,8 @@ use anywho::anywho;
 use std::os::unix::process::ExitStatusExt;
 use std::process::ExitStatus;
 
+use crate::app::core::run_command;
+
 #[derive(Debug, Clone)]
 pub struct SystemUpdate {
     pub version: String,
@@ -14,24 +16,7 @@ pub struct SystemUpdate {
 impl SystemUpdate {
     // Check if a [`SystemUpdate`] is available using: rpm-ostree upgrade --check
     pub async fn check() -> Option<SystemUpdate> {
-        use tokio::process::Command;
-
-        let output = if super::is_running_in_distrobox() {
-            Command::new("distrobox-host-exec")
-                .args(["rpm-ostree", "upgrade", "--check"])
-                .output()
-                .await
-        } else if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args(["--host", "rpm-ostree", "upgrade", "--check"])
-                .output()
-                .await
-        } else {
-            Command::new("rpm-ostree")
-                .args(["upgrade", "--check"])
-                .output()
-                .await
-        };
+        let output = run_command("rpm-ostree", &["upgrade", "--check"]).await;
 
         let output = match output {
             Ok(output) => output,
@@ -99,24 +84,7 @@ impl SystemUpdate {
 
     /// Update the system using: pkexec rpm-ostree upgrade
     pub async fn update() -> Result<(), anywho::Error> {
-        use tokio::process::Command;
-
-        let output = if super::is_running_in_distrobox() {
-            Command::new("distrobox-host-exec")
-                .args(["pkexec", "rpm-ostree", "upgrade"])
-                .output()
-                .await
-        } else if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args(["--host", "pkexec", "rpm-ostree", "upgrade"])
-                .output()
-                .await
-        } else {
-            Command::new("pkexec")
-                .args(["rpm-ostree", "upgrade"])
-                .output()
-                .await
-        };
+        let output = run_command("pkexec", &["rpm-ostree", "upgrade"]).await;
 
         match output {
             Ok(output) => {

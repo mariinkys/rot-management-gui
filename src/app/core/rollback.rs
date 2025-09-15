@@ -4,26 +4,11 @@ use anywho::anywho;
 use std::os::unix::process::ExitStatusExt;
 use std::process::ExitStatus;
 
+use crate::app::core::run_command;
+
 /// Rollback the system using: pkexec rpm-ostree rollback
 pub async fn rollback() -> Result<(), anywho::Error> {
-    use tokio::process::Command;
-
-    let output = if super::is_running_in_distrobox() {
-        Command::new("distrobox-host-exec")
-            .args(["pkexec", "rpm-ostree", "rollback"])
-            .output()
-            .await
-    } else if super::is_flatpak() {
-        Command::new("flatpak-spawn")
-            .args(["--host", "pkexec", "rpm-ostree", "rollback"])
-            .output()
-            .await
-    } else {
-        Command::new("pkexec")
-            .args(["rpm-ostree", "rollback"])
-            .output()
-            .await
-    };
+    let output = run_command("pkexec", &["rpm-ostree", "rollback"]).await;
 
     match output {
         Ok(output) => {

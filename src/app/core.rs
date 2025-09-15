@@ -8,6 +8,35 @@ pub mod system_status;
 pub mod update_applications;
 pub mod update_system;
 
+/// Runs the given command correctly for each possible context (Flatpak/Distrobox/System)
+pub async fn run_command(
+    main_command: &str,
+    args: &[&str],
+) -> Result<std::process::Output, std::io::Error> {
+    use tokio::process::Command;
+
+    if is_flatpak() {
+        // If is flatpak we need to add flatpak-spawn --host
+        Command::new("flatpak-spawn")
+            .args(
+                vec!["--host", main_command]
+                    .into_iter()
+                    .chain(args.iter().cloned()),
+            )
+            .output()
+            .await
+    } else if is_running_in_distrobox() {
+        // If is distrobox we need to add distrobox-host-exec
+        Command::new("distrobox-host-exec")
+            .args(vec![main_command].into_iter().chain(args.iter().cloned()))
+            .output()
+            .await
+    } else {
+        // Add nothing (Ej: main_command: "pkexec", args: ["rpm-ostree", "rollback"])
+        Command::new(main_command).args(args).output().await
+    }
+}
+
 /// Checks if the application is running inside a flatpak
 fn is_flatpak() -> bool {
     std::env::var("FLATPAK_ID").is_ok()
