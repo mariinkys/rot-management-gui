@@ -313,7 +313,15 @@ impl SystemStatus {
         .height(Length::Fill)
         .padding(10.);
 
-        iced::widget::stack![main_content, back_button, refresh_button].into()
+        // TODO: This kinda sucks (This way of hiding the header elements for the subcreen),
+        // there's probably a much better way to do this.
+        match &self.state {
+            State::Ready {
+                sub_screen: SubScreen::LayeredPackages { .. },
+                ..
+            } => iced::widget::stack![main_content].into(),
+            _ => iced::widget::stack![main_content, back_button, refresh_button].into(),
+        }
     }
 
     pub fn subscription(&self, _now: Instant) -> Subscription<Message> {
