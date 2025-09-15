@@ -6,11 +6,14 @@ use iced::{Alignment, Element, Length, Subscription, Task};
 
 use crate::app::core::system_status::Deployment;
 use crate::app::core::{reboot, reboot_pending};
+use crate::app::screen::system_status::layered_packages::LayeredPackages;
 use crate::app::style::{icon_button_style, icon_svg_style, primary_button_style};
 use crate::app::widgets::spinners::circular::Circular;
 use crate::app::widgets::spinners::easing;
 use crate::app::widgets::toast::Toast;
 use crate::{fl, icons};
+
+pub mod layered_packages;
 
 pub struct SystemStatus {
     state: State,
@@ -31,9 +34,6 @@ pub enum Message {
     /// Callback after loading all the deployments
     DeploymentsLoaded(Result<Vec<Deployment>, anywho::Error>),
 
-    /// Request to manage layered packages
-    //ManageLayeredPackages,
-
     /// Ask to pin a deployment
     PinDeployment(Deployment),
     /// Ask to unpin a deployment
@@ -45,12 +45,22 @@ pub enum Message {
     RebootNow,
     /// Callback presumably if reboot failed
     RebootCallback(Result<(), anywho::Error>),
+
+    /// Layered Packages SubScreen Messages
+    LayeredPackages(layered_packages::Message),
+    /// Asks to Open the Layered Packages SubScreen
+    OpenLayeredPackages,
 }
 
 pub enum State {
     Loading,
     PendingReboot,
-    Ready { deployments: Vec<Deployment> },
+    Ready { sub_screen: SubScreen },
+}
+
+pub enum SubScreen {
+    Main { deployments: Vec<Deployment> },
+    LayeredPackages(LayeredPackages),
 }
 
 pub enum Action {
@@ -71,7 +81,111 @@ impl SystemStatus {
         )
     }
 
-    pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
+    #[allow(clippy::only_used_in_recursion)]
+    pub fn update(&mut self, message: Message, now: Instant) -> Action {
+        match message {
+            Message::Back => Action::Back,
+            Message::CheckReboot => {
+                self.state = State::Loading;
+                Action::Run(Task::perform(reboot_pending(), Message::RebootChecked))
+            }
+            Message::RebootChecked(result) => match result {
+                true => {
+                    self.state = State::PendingReboot;
+                    Action::None
+                }
+                false => self.update(Message::LoadDeployments, now),
+            },
+            Message::LoadDeployments => Action::Run(Task::perform(
+                Deployment::get_all(),
+                Message::DeploymentsLoaded,
+            )),
+            Message::DeploymentsLoaded(deployments) => match deployments {
+                Ok(deployments) => {
+                    self.state = State::Ready {
+                        sub_screen: SubScreen::Main { deployments },
+                    };
+                    Action::None
+                }
+                Err(err) => {
+                    self.state = State::Ready {
+                        sub_screen: SubScreen::Main {
+                            deployments: Vec::new(),
+                        },
+                    };
+                    Action::AddToast(Toast::error_toast(err))
+                }
+            },
+            Message::PinDeployment(deployment) => {
+                if !deployment.is_pinned {
+                    return Action::Run(Task::perform(
+                        Deployment::pin_deployment(deployment.index),
+                        Message::DeploymentPinChanged,
+                    ));
+                }
+                Action::None
+            }
+            Message::UnpinDeployment(deployment) => {
+                if deployment.is_pinned {
+                    return Action::Run(Task::perform(
+                        Deployment::unpin_deployment(deployment.index),
+                        Message::DeploymentPinChanged,
+                    ));
+                }
+                Action::None
+            }
+            Message::DeploymentPinChanged(result) => match result {
+                Ok(_) => self.update(Message::LoadDeployments, now),
+                Err(err) => Action::AddToastAndRun((
+                    Toast::error_toast(err),
+                    Task::perform(Deployment::get_all(), Message::DeploymentsLoaded),
+                )),
+            },
+            Message::RebootNow => Action::Run(Task::perform(reboot(), Message::RebootCallback)),
+            Message::RebootCallback(result) => match result {
+                Ok(_) => self.update(Message::CheckReboot, now),
+                Err(err) => Action::AddToast(Toast::error_toast(err)),
+            },
+            Message::LayeredPackages(message) => {
+                let State::Ready { sub_screen, .. } = &mut self.state else {
+                    return Action::None;
+                };
+
+                let SubScreen::LayeredPackages(layered_packages) = sub_screen else {
+                    return Action::None;
+                };
+
+                match layered_packages.update(message, now) {
+                    layered_packages::Action::None => Action::None,
+                    layered_packages::Action::Back => self.update(Message::LoadDeployments, now),
+                    layered_packages::Action::Run(task) => {
+                        Action::Run(task.map(Message::LayeredPackages))
+                    }
+                    layered_packages::Action::AddToast(toast) => Action::AddToast(toast),
+                }
+            }
+            Message::OpenLayeredPackages => {
+                let State::Ready { sub_screen, .. } = &mut self.state else {
+                    return Action::None;
+                };
+
+                let SubScreen::Main { deployments, .. } = sub_screen else {
+                    return Action::None;
+                };
+
+                let main_deployment = deployments.iter().find(|x| x.index == 0);
+                if let Some(deployment) = main_deployment {
+                    let (layered_packages, task) = LayeredPackages::new(deployment.clone());
+                    *sub_screen = SubScreen::LayeredPackages(layered_packages);
+                    return Action::Run(task.map(Message::LayeredPackages));
+                }
+
+                Action::None
+            }
+        }
+    }
+
+    pub fn view(&self, now: Instant) -> iced::Element<'_, Message> {
         let content: Element<Message> = match &self.state {
             State::Loading => container(
                 column![
@@ -110,61 +224,66 @@ impl SystemStatus {
             .width(Length::Fill)
             .align_x(Alignment::Center)
             .into(),
-            State::Ready { deployments } => {
-                if deployments.is_empty() {
-                    column![
-                        Space::new(Length::Fill, Length::Fixed(35.)),
-                        text(fl!("no-deployments-error"))
-                            .width(Length::Fill)
-                            .size(18)
-                            .font(iced::font::Font {
-                                weight: iced::font::Weight::Bold,
-                                ..Default::default()
-                            })
-                            .width(Length::Fill)
-                            .align_x(Alignment::Center)
-                    ]
-                    .padding(20.)
-                    .spacing(5.)
-                    .height(Length::Fill)
-                    .width(Length::Fill)
-                    .align_x(Alignment::Center)
-                    .into()
-                } else {
-                    let mut deployment_cards = column![]
-                        .align_x(Alignment::Center)
-                        .height(Length::Fill)
-                        .width(Length::Fill)
-                        .spacing(10.);
-
-                    for deployment in deployments {
-                        deployment_cards = deployment_cards.push(deployment_card(deployment));
-                    }
-
-                    column![
-                        Space::new(Length::Fill, Length::Fixed(35.)),
-                        row![
-                            text(fl!("system-status"))
+            State::Ready { sub_screen } => match sub_screen {
+                SubScreen::Main { deployments } => {
+                    if deployments.is_empty() {
+                        column![
+                            Space::new(Length::Fill, Length::Fixed(35.)),
+                            text(fl!("no-deployments-error"))
                                 .width(Length::Fill)
                                 .size(18)
                                 .font(iced::font::Font {
                                     weight: iced::font::Weight::Bold,
                                     ..Default::default()
-                                }),
-                            // button(text(fl!("manage-layered-packages")))
-                            //     .style(primary_button_style)
-                            //     .on_press(Message::ManageLayeredPackages)
-                        ],
-                        scrollable(deployment_cards),
-                    ]
-                    .padding(20.)
-                    .spacing(5.)
-                    .height(Length::Fill)
-                    .width(Length::Fill)
-                    .align_x(Alignment::Center)
-                    .into()
+                                })
+                                .width(Length::Fill)
+                                .align_x(Alignment::Center)
+                        ]
+                        .padding(20.)
+                        .spacing(5.)
+                        .height(Length::Fill)
+                        .width(Length::Fill)
+                        .align_x(Alignment::Center)
+                        .into()
+                    } else {
+                        let mut deployment_cards = column![]
+                            .align_x(Alignment::Center)
+                            .height(Length::Fill)
+                            .width(Length::Fill)
+                            .spacing(10.);
+
+                        for deployment in deployments {
+                            deployment_cards = deployment_cards.push(deployment_card(deployment));
+                        }
+
+                        column![
+                            Space::new(Length::Fill, Length::Fixed(35.)),
+                            row![
+                                text(fl!("system-status"))
+                                    .width(Length::Fill)
+                                    .size(18)
+                                    .font(iced::font::Font {
+                                        weight: iced::font::Weight::Bold,
+                                        ..Default::default()
+                                    }),
+                                button(text(fl!("manage-layered-packages")))
+                                    .style(primary_button_style)
+                                    .on_press(Message::OpenLayeredPackages)
+                            ],
+                            scrollable(deployment_cards),
+                        ]
+                        .padding(20.)
+                        .spacing(5.)
+                        .height(Length::Fill)
+                        .width(Length::Fill)
+                        .align_x(Alignment::Center)
+                        .into()
+                    }
                 }
-            }
+                SubScreen::LayeredPackages(layered_packages) => {
+                    layered_packages.view(now).map(Message::LayeredPackages)
+                }
+            },
         };
 
         let main_content = container(content)
@@ -195,76 +314,6 @@ impl SystemStatus {
         .padding(10.);
 
         iced::widget::stack![main_content, back_button, refresh_button].into()
-    }
-
-    #[allow(clippy::only_used_in_recursion)]
-    pub fn update(&mut self, message: Message, now: Instant) -> Action {
-        match message {
-            Message::Back => Action::Back,
-            Message::CheckReboot => {
-                self.state = State::Loading;
-                Action::Run(Task::perform(reboot_pending(), Message::RebootChecked))
-            }
-            Message::RebootChecked(result) => match result {
-                true => {
-                    self.state = State::PendingReboot;
-                    Action::None
-                }
-                false => self.update(Message::LoadDeployments, now),
-            },
-            Message::LoadDeployments => Action::Run(Task::perform(
-                Deployment::get_all(),
-                Message::DeploymentsLoaded,
-            )),
-            Message::DeploymentsLoaded(deployments) => match deployments {
-                Ok(deployments) => {
-                    self.state = State::Ready { deployments };
-                    Action::None
-                }
-                Err(err) => {
-                    self.state = State::Ready {
-                        deployments: Vec::new(),
-                    };
-                    Action::AddToast(Toast::error_toast(err))
-                }
-            },
-            // Message::ManageLayeredPackages => match self.pending_reboot {
-            //     true => Action::AddToast(Toast::error_toast(
-            //         "Can't manage layered packages with a pending reboot",
-            //     )),
-            //     false => Action::AddToast(Toast::warning_toast("Feature in development")),
-            // },
-            Message::PinDeployment(deployment) => {
-                if !deployment.is_pinned {
-                    return Action::Run(Task::perform(
-                        Deployment::pin_deployment(deployment.index),
-                        Message::DeploymentPinChanged,
-                    ));
-                }
-                Action::None
-            }
-            Message::UnpinDeployment(deployment) => {
-                if deployment.is_pinned {
-                    return Action::Run(Task::perform(
-                        Deployment::unpin_deployment(deployment.index),
-                        Message::DeploymentPinChanged,
-                    ));
-                }
-                Action::None
-            }
-            Message::DeploymentPinChanged(result) => match result {
-                Ok(_) => self.update(Message::LoadDeployments, now),
-                Err(err) => Action::AddToastAndRun((
-                    Toast::error_toast(err),
-                    Task::perform(Deployment::get_all(), Message::DeploymentsLoaded),
-                )),
-            },
-            Message::RebootNow => Action::Run(Task::perform(reboot(), Message::RebootCallback)),
-            Message::RebootCallback(result) => match result {
-                Ok(_) => self.update(Message::CheckReboot, now),
-                Err(err) => Action::AddToast(Toast::error_toast(err)),
-            },
-        }
     }
 
     pub fn subscription(&self, _now: Instant) -> Subscription<Message> {
