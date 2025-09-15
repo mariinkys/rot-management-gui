@@ -75,7 +75,7 @@
     <releases>
         <release version="0.1.0" date="2025-09-15">
             <description>
-                <p>First stable release</p>
+                <p>Software release</p>
                 <p>Update your System</p>
                 <p>Update your Flatpak applications</p>
                 <p>Rollback your system in case anything goes wrong</p>
