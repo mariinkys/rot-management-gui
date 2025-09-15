@@ -2,6 +2,8 @@ use anywho::anywho;
 use std::os::unix::process::ExitStatusExt;
 use std::process::ExitStatus;
 
+use crate::app::core::run_command;
+
 #[derive(Debug, Clone)]
 pub struct Deployment {
     pub name: String,
@@ -16,21 +18,7 @@ pub struct Deployment {
 impl Deployment {
     /// Get's all the current deployments using rpm-ostree status
     pub async fn get_all() -> Result<Vec<Deployment>, anywho::Error> {
-        use tokio::process::Command;
-
-        let output = if super::is_running_in_distrobox() {
-            Command::new("distrobox-host-exec")
-                .args(["rpm-ostree", "status"])
-                .output()
-                .await
-        } else if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args(["--host", "rpm-ostree", "status"])
-                .output()
-                .await
-        } else {
-            Command::new("rpm-ostree").args(["status"]).output().await
-        };
+        let output = run_command("rpm-ostree", &["status"]).await;
 
         let output = match output {
             Ok(output) => output,
@@ -144,37 +132,11 @@ impl Deployment {
     }
 
     pub async fn pin_deployment(deployment_index: i32) -> Result<(), anywho::Error> {
-        use tokio::process::Command;
-
-        let output = if super::is_running_in_distrobox() {
-            Command::new("distrobox-host-exec")
-                .args([
-                    "pkexec",
-                    "ostree",
-                    "admin",
-                    "pin",
-                    &deployment_index.to_string(),
-                ])
-                .output()
-                .await
-        } else if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args([
-                    "--host",
-                    "pkexec",
-                    "ostree",
-                    "admin",
-                    "pin",
-                    &deployment_index.to_string(),
-                ])
-                .output()
-                .await
-        } else {
-            Command::new("pkexec")
-                .args(["ostree", "admin", "pin", &deployment_index.to_string()])
-                .output()
-                .await
-        };
+        let output = run_command(
+            "pkexec",
+            &["ostree", "admin", "pin", &deployment_index.to_string()],
+        )
+        .await;
 
         match output {
             Ok(output) => {
@@ -203,45 +165,17 @@ impl Deployment {
     }
 
     pub async fn unpin_deployment(deployment_index: i32) -> Result<(), anywho::Error> {
-        use tokio::process::Command;
-
-        let output = if super::is_running_in_distrobox() {
-            Command::new("distrobox-host-exec")
-                .args([
-                    "pkexec",
-                    "ostree",
-                    "admin",
-                    "pin",
-                    "--unpin",
-                    &deployment_index.to_string(),
-                ])
-                .output()
-                .await
-        } else if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args([
-                    "--host",
-                    "pkexec",
-                    "ostree",
-                    "admin",
-                    "pin",
-                    "--unpin",
-                    &deployment_index.to_string(),
-                ])
-                .output()
-                .await
-        } else {
-            Command::new("pkexec")
-                .args([
-                    "ostree",
-                    "admin",
-                    "pin",
-                    "--unpin",
-                    &deployment_index.to_string(),
-                ])
-                .output()
-                .await
-        };
+        let output = run_command(
+            "pkexec",
+            &[
+                "ostree",
+                "admin",
+                "pin",
+                "--unpin",
+                &deployment_index.to_string(),
+            ],
+        )
+        .await;
 
         match output {
             Ok(output) => {

@@ -4,6 +4,8 @@ use anywho::anywho;
 use std::collections::HashMap;
 use std::process::Command;
 
+use crate::app::core::run_command;
+
 #[derive(Debug, Clone)]
 pub struct Application {
     pub name: String,
@@ -71,21 +73,11 @@ impl Application {
 
     /// Get all installed Flatpak applications with their versions
     async fn get_installed_applications() -> Result<HashMap<String, String>, anywho::Error> {
-        let output = if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args([
-                    "--host",
-                    "flatpak",
-                    "list",
-                    "--app",
-                    "--columns=application,version",
-                ])
-                .output()
-        } else {
-            Command::new("flatpak")
-                .args(["list", "--app", "--columns=application,version"])
-                .output()
-        };
+        let output = run_command(
+            "flatpak",
+            &["list", "--app", "--columns=application,version"],
+        )
+        .await;
 
         let output = match output {
             Ok(output) => output,
@@ -303,15 +295,7 @@ impl Application {
 
     /// Get the display name for an application
     async fn get_app_display_name(app_id: &str) -> Result<String, anywho::Error> {
-        let output = if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args(["--host", "flatpak", "info", "--show-metadata", app_id])
-                .output()?
-        } else {
-            Command::new("flatpak")
-                .args(["info", "--show-metadata", app_id])
-                .output()?
-        };
+        let output = run_command("flatpak", &["info", "--show-metadata", app_id]).await?;
 
         if !output.status.success() {
             return Ok(app_id.to_string()); // fallback to app ID
@@ -357,17 +341,9 @@ impl Application {
 
     /// Update a specific application
     pub async fn update(app_id: String) -> Result<(), UpdateError> {
-        let output = if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args(["--host", "flatpak", "update", "-y", &app_id])
-                .output()
-                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
-        } else {
-            Command::new("flatpak")
-                .args(["update", "-y", &app_id])
-                .output()
-                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
-        };
+        let output = run_command("flatpak", &["update", "-y", &app_id])
+            .await
+            .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?;
 
         if !output.status.success() {
             let error_msg = String::from_utf8_lossy(&output.stderr);
@@ -387,18 +363,9 @@ impl Application {
     ) -> Result<Vec<UpdateResult>, UpdateError> {
         let mut results = Vec::new();
 
-        // update all at once
-        let output = if super::is_flatpak() {
-            Command::new("flatpak-spawn")
-                .args(["--host", "flatpak", "update", "-y"])
-                .output()
-                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
-        } else {
-            Command::new("flatpak")
-                .args(["update", "-y"])
-                .output()
-                .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?
-        };
+        let output = run_command("flatpak", &["update", "-y"])
+            .await
+            .map_err(|e| UpdateError::CommandFailed(anywho!("{}", e)))?;
 
         if output.status.success() {
             for app in apps_to_update {
