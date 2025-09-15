@@ -28,7 +28,7 @@ Key features are:
 
 This project is being developed to help people who are not that experienced with Linux and the CLI manage their atomic systems. I know that Gnome Software has "full" integration with RPM OSTree; however, in my personal experience, Gnome Software is not that reliable nor fast on Fedora Silverblue (also, there are some missing options...), hence why I considered developing this tool. This software is not and will never be a full replacement for Gnome Software. I just want people to be able to interact with RPM OSTree and keep both their system and packages updated...
 
-Special thanks to Simon and Catalina for their patience and confidence to switch their work machines from Windows to Fedora Silverblue and for the idea and motivation for this project.
+Special thanks to Simon and Catalina for their patience and confidence to switch their machines from Windows to Fedora Silverblue and for the idea and motivation for this project.
 
 ## TODO
 
