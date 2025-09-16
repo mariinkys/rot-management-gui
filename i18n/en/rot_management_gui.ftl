@@ -44,6 +44,9 @@ remove-packages = Remove Packages
 search-package-add-placeholder = Package to Add
 add = Add
 no-packages-add-list = No Packages on the Add List
+packages-to-add-footer = Packages to Add
+packages-to-remove-footer = Packages to Remove
+remove = Remove
 
 configuration = Application Configuration
 theme = Theme

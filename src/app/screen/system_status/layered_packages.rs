@@ -1,11 +1,14 @@
-use iced::Task;
 use iced::time::Instant;
-use iced::widget::{Space, button, column, container, row, text, text_input};
+use iced::widget::text::LineHeight;
+use iced::widget::{Space, button, checkbox, column, container, row, text, text_input};
 use iced::{Alignment, Element, Length};
+use iced::{Padding, Task};
 
 use crate::app::core::layered_packages::{CheckPackageError, check_package};
 use crate::app::style::{
-    danger_icon_button_style, icon_button_style, icon_svg_style, primary_button_style,
+    TabButtonPosition, danger_icon_button_style, icon_button_style, icon_svg_style,
+    primary_button_style, rounded_button_combo_style, rounded_input_combo_style,
+    rounderer_box_container_style, tab_button_style,
 };
 use crate::app::{core::system_status::Deployment, widgets::toast::Toast};
 use crate::{fl, icons};
@@ -33,6 +36,8 @@ pub enum Message {
     PackageToAddChecked(Result<String, CheckPackageError>),
     /// Removes a package from the packages to add list
     RemovePackageFromAddList(String),
+    /// Toggles the package removal state
+    TogglePackageToRemove(String, bool),
 }
 
 pub enum Action {
@@ -50,8 +55,25 @@ enum Tab {
         packages_to_add: Vec<String>,
     },
     RemovePackages {
-        packages_to_remove: Vec<String>,
+        packages_to_remove: Vec<(String, bool)>,
     },
+}
+
+impl Tab {
+    fn kind(&self) -> &'static str {
+        match self {
+            Tab::AddPackages { .. } => "AddPackages",
+            Tab::RemovePackages { .. } => "RemovePackages",
+        }
+    }
+
+    pub fn is_add_packages(&self) -> bool {
+        matches!(self, Tab::AddPackages { .. })
+    }
+
+    pub fn is_remove_packages(&self) -> bool {
+        matches!(self, Tab::RemovePackages { .. })
+    }
 }
 
 impl Default for Tab {
@@ -60,6 +82,12 @@ impl Default for Tab {
             package_name_input: String::new(),
             packages_to_add: Vec::new(),
         }
+    }
+}
+
+impl PartialEq for Tab {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind() == other.kind()
     }
 }
 
@@ -86,7 +114,7 @@ impl LayeredPackages {
             Message::Back => Action::Back,
             Message::OpenAddPackagesTab => {
                 if let Tab::RemovePackages { packages_to_remove } = &self.current_tab {
-                    if packages_to_remove.is_empty() {
+                    if !packages_to_remove.iter().any(|x| x.1) {
                         self.current_tab = Tab::AddPackages {
                             package_name_input: String::new(),
                             packages_to_add: Vec::new(),
@@ -112,9 +140,14 @@ impl LayeredPackages {
                 } = &self.current_tab
                 {
                     if packages_to_add.is_empty() {
-                        self.current_tab = Tab::RemovePackages {
-                            packages_to_remove: Vec::new(),
-                        };
+                        let packages_to_remove: Vec<(String, bool)> = self
+                            .current_packages
+                            .iter()
+                            .cloned()
+                            .map(|pkg| (pkg, false))
+                            .collect();
+
+                        self.current_tab = Tab::RemovePackages { packages_to_remove };
                     } else {
                         return Action::AddToast(Toast::warning_toast(
                             "You have packages to add selected, changes will be lost if you change Tab's",
@@ -191,6 +224,19 @@ impl LayeredPackages {
                 }
                 Action::None
             }
+            Message::TogglePackageToRemove(package_name, new_value) => {
+                if let Tab::RemovePackages {
+                    packages_to_remove, ..
+                } = &mut self.current_tab
+                {
+                    packages_to_remove.iter_mut().for_each(|p| {
+                        if p.0 == package_name {
+                            p.1 = new_value;
+                        }
+                    });
+                }
+                Action::None
+            }
         }
     }
 
@@ -208,12 +254,14 @@ impl LayeredPackages {
                     .on_input(Message::AddPackageInputUpdated)
                     .on_paste(Message::AddPackageInputUpdated)
                     .on_submit(Message::CheckPackageBeforeAddList)
-                    .width(Length::Fill),
-                    button(text(fl!("add")))
+                    .width(Length::Fill)
+                    .style(rounded_input_combo_style)
+                    .line_height(LineHeight::Relative(2.)),
+                    button(text(fl!("add")).line_height(LineHeight::Relative(2.)))
                         .style(primary_button_style)
                         .on_press(Message::CheckPackageBeforeAddList)
-                ]
-                .spacing(3.);
+                        .style(rounded_button_combo_style)
+                ];
 
                 let packages_to_add_content: Element<Message> = if packages_to_add.is_empty() {
                     container(text(fl!("no-packages-add-list")))
@@ -228,7 +276,16 @@ impl LayeredPackages {
                             col.push(
                                 container(
                                     row![
-                                        text(package).width(Length::Fill),
+                                        container(
+                                            text(package)
+                                                .font(iced::font::Font {
+                                                    weight: iced::font::Weight::Bold,
+                                                    ..Default::default()
+                                                })
+                                                .width(Length::Fill)
+                                        )
+                                        .padding(Padding::new(0.).left(10.))
+                                        .width(Length::Fill),
                                         button(
                                             icons::get_icon("user-trash-full-symbolic", 18)
                                                 .style(icon_svg_style)
@@ -241,18 +298,74 @@ impl LayeredPackages {
                                     .align_y(Alignment::Center)
                                     .width(Length::Fill),
                                 )
-                                .style(container::rounded_box)
+                                .style(rounderer_box_container_style)
                                 .align_y(Alignment::Center)
                                 .width(Length::Fill)
                                 .padding(10.),
                             )
                         })
+                        .push(
+                            container(text(format!(
+                                "{} {}",
+                                packages_to_add.len(),
+                                fl!("packages-to-add-footer")
+                            )))
+                            .width(Length::Fill)
+                            .align_x(Alignment::Center)
+                            .padding(10.),
+                        )
                         .into()
                 };
 
                 column![search_package_input_row, packages_to_add_content].spacing(5.)
             }
-            Tab::RemovePackages { packages_to_remove } => todo!(),
+            Tab::RemovePackages { packages_to_remove } => packages_to_remove
+                .iter()
+                .fold(
+                    column![].spacing(5.).width(Length::Fill),
+                    |col, (package_name, select_status)| {
+                        col.push(
+                            container(
+                                row![
+                                    container(
+                                        text(package_name)
+                                            .font(iced::font::Font {
+                                                weight: iced::font::Weight::Bold,
+                                                ..Default::default()
+                                            })
+                                            .width(Length::Fill)
+                                    )
+                                    .padding(Padding::new(0.).left(10.))
+                                    .width(Length::Fill),
+                                    checkbox(fl!("remove"), *select_status)
+                                        .on_toggle(|new_value| {
+                                            Message::TogglePackageToRemove(
+                                                package_name.to_string(),
+                                                new_value,
+                                            )
+                                        })
+                                        .style(checkbox::danger),
+                                ]
+                                .align_y(Alignment::Center)
+                                .width(Length::Fill),
+                            )
+                            .style(rounderer_box_container_style)
+                            .align_y(Alignment::Center)
+                            .width(Length::Fill)
+                            .padding(10.),
+                        )
+                    },
+                )
+                .push(
+                    container(text(format!(
+                        "{} {}",
+                        packages_to_remove.iter().filter(|x| x.1).count(),
+                        fl!("packages-to-remove-footer")
+                    )))
+                    .width(Length::Fill)
+                    .align_x(Alignment::Center)
+                    .padding(10.),
+                ),
         };
 
         let content: Element<Message> = column![
@@ -272,17 +385,37 @@ impl LayeredPackages {
                     text(fl!("add-packages"))
                         .align_x(Alignment::Center)
                         .align_y(Alignment::Center)
+                        .size(16)
+                        .font(iced::font::Font {
+                            weight: iced::font::Weight::Bold,
+                            ..Default::default()
+                        })
                 )
                 .on_press(Message::OpenAddPackagesTab)
-                .style(button::subtle)
+                .style(|t, s| tab_button_style(
+                    t,
+                    s,
+                    self.current_tab.is_add_packages(),
+                    TabButtonPosition::Left
+                ))
                 .width(Length::Fill),
                 button(
                     text(fl!("remove-packages"))
                         .align_x(Alignment::Center)
                         .align_y(Alignment::Center)
+                        .size(16)
+                        .font(iced::font::Font {
+                            weight: iced::font::Weight::Bold,
+                            ..Default::default()
+                        })
                 )
                 .on_press(Message::OpenRemovePackagesTab)
-                .style(button::subtle)
+                .style(|t, s| tab_button_style(
+                    t,
+                    s,
+                    self.current_tab.is_remove_packages(),
+                    TabButtonPosition::Right
+                ))
                 .width(Length::Fill)
             ]
             .width(Length::Fill)
