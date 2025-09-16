@@ -149,7 +149,11 @@ impl LayeredPackages {
                         ));
                     }
 
-                    if !package_name_input.is_empty() {
+                    if self.current_packages.contains(&trimmed_package_name) {
+                        return Action::AddToast(Toast::warning_toast("Package already installed"));
+                    }
+
+                    if !trimmed_package_name.is_empty() {
                         return Action::Run(Task::perform(
                             check_package(trimmed_package_name),
                             Message::PackageToAddChecked,
@@ -212,11 +216,15 @@ impl LayeredPackages {
                 .spacing(3.);
 
                 let packages_to_add_content: Element<Message> = if packages_to_add.is_empty() {
-                    text(fl!("no-packages-add-list")).into()
+                    container(text(fl!("no-packages-add-list")))
+                        .align_x(Alignment::Center)
+                        .width(Length::Fill)
+                        .padding(5.)
+                        .into()
                 } else {
                     packages_to_add
                         .iter()
-                        .fold(column![].spacing(3.).width(Length::Fill), |col, package| {
+                        .fold(column![].spacing(5.).width(Length::Fill), |col, package| {
                             col.push(
                                 container(
                                     row![
@@ -230,18 +238,19 @@ impl LayeredPackages {
                                         ))
                                         .style(danger_icon_button_style),
                                     ]
+                                    .align_y(Alignment::Center)
                                     .width(Length::Fill),
                                 )
-                                .style(container::secondary)
+                                .style(container::rounded_box)
                                 .align_y(Alignment::Center)
                                 .width(Length::Fill)
-                                .padding(3.),
+                                .padding(10.),
                             )
                         })
                         .into()
                 };
 
-                column![search_package_input_row, packages_to_add_content].spacing(3.)
+                column![search_package_input_row, packages_to_add_content].spacing(5.)
             }
             Tab::RemovePackages { packages_to_remove } => todo!(),
         };
