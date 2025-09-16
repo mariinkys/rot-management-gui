@@ -6,7 +6,7 @@
   ![GitHub License](https://img.shields.io/github/license/mariinkys/rot-management-gui)
   ![GitHub Repo stars](https://img.shields.io/github/stars/mariinkys/rot-management-gui)
 
-  <h3>*WIP* GUI to manage RPMOSTree Systems (Such as Silverblue or Kinoite)</h3>
+  <h3>GUI to manage RPMOSTree Systems (Such as Silverblue or Kinoite)</h3>
 
   <img width="350" alt="Main Page Light Mode" src="./screenshots/main-light.png"/>
   <img width="350" alt="Main Page Dark Mode" src="./screenshots/main-dark.png"/>
@@ -15,9 +15,15 @@
 ## Notes
 
 > [!WARNING]
-> For this app to work correctly you MUST disable automatic updates on GNOME Software/KDE Software Update.
+> For this app to work correctly you MUST disable automatic updates on GNOME Software/KDE Software Update...
 >
 > You can check this in GNOME Software > Preferences or KDE Settings > Software Update
+> In Bazzite/UBlue distros it seems you can use `ujust _toggle-updates` (Check: https://github.com/ublue-os/bazzite/issues/2592)
+
+> [!CAUTION]
+> This app has been tested on Fedora Silverblue and Kinoite; efforts to make it work correctly on Bazzite... are being made; however, for now system updates can't be performed on Bazzite since `rpm-ostree upgrade --check` seems to not work reliably. 
+> Also, considering Bazzite... provide their own tools to handle updates comfortably I'm wondering if trying to support Bazzite... is a good idea in the first place.
+
 
 Key features are:
 
@@ -32,7 +38,7 @@ Special thanks to Simon and Catalina for their patience and confidence to switch
 
 ## TODO
 
-- Layered packages management
+- Upgrading Between Major Versions (https://docs.fedoraproject.org/en-US/fedora-silverblue/updates-upgrades-rollbacks/#upgrading)
 
 ## Attributions
 
