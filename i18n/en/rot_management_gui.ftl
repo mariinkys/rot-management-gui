@@ -31,7 +31,7 @@ rollback-warning = Do not close this program
 loading = Loading...
 
 system-status = System Status
-system-status-description = System Status 
+system-status-description = System Status (View, Pin, Unpin... your Deployments)
 no-deployments-error = Error, no deployments found!
 manage-layered-packages = Manage Layered Packages
 pin-deployment = Pin this deployment

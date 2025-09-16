@@ -31,7 +31,7 @@ rollback-warning = No cierre este programa
 loading = Cargando...
 
 system-status = Estado del Sistema
-system-status-description = Estado del Sistema
+system-status-description = Estado del Sistema (Ver, Fijar, Desfijar... tus Despliegues)
 no-deployments-error = Error, no se encontraron despliegues!
 manage-layered-packages = Paquetes "Capa"
 pin-deployment = Fijar este despliegue
