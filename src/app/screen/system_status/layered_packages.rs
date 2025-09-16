@@ -106,8 +106,8 @@ impl LayeredPackages {
     pub fn new(current_deployment: Deployment) -> (Self, Task<Message>) {
         let current_packages: Vec<String> = current_deployment
             .layered_packages
-            .split(' ')
-            .map(|s| s.trim().to_string())
+            .split_whitespace()
+            .map(str::to_owned)
             .collect();
 
         (
