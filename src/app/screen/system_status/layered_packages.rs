@@ -3,7 +3,7 @@ use iced::time::Instant;
 use iced::widget::{Space, button, column, container, row, text};
 use iced::{Alignment, Element, Length};
 
-use crate::app::style::{icon_button_style, icon_svg_style};
+use crate::app::style::{icon_button_style, icon_svg_style, primary_button_style};
 use crate::app::{core::system_status::Deployment, widgets::toast::Toast};
 use crate::{fl, icons};
 
@@ -126,7 +126,36 @@ impl LayeredPackages {
 
         let content: Element<Message> = column![
             Space::new(Length::Fill, Length::Fixed(35.)),
-            row![button("Add Packages"), button("Remove Packages")],
+            row![
+                text(fl!("manage-layered-packages"))
+                    .width(Length::Fill)
+                    .size(18)
+                    .font(iced::font::Font {
+                        weight: iced::font::Weight::Bold,
+                        ..Default::default()
+                    }),
+                button(text(fl!("apply-changes"))).style(primary_button_style)
+            ],
+            row![
+                button(
+                    text(fl!("add-packages"))
+                        .align_x(Alignment::Center)
+                        .align_y(Alignment::Center)
+                )
+                .on_press(Message::OpenAddPackagesTab)
+                .style(button::subtle)
+                .width(Length::Fill),
+                button(
+                    text(fl!("remove-packages"))
+                        .align_x(Alignment::Center)
+                        .align_y(Alignment::Center)
+                )
+                .on_press(Message::OpenRemovePackagesTab)
+                .style(button::subtle)
+                .width(Length::Fill)
+            ]
+            .width(Length::Fill)
+            .align_y(Alignment::Center),
             tab_content
         ]
         .padding(20.)

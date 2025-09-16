@@ -38,6 +38,10 @@ pin-deployment = Pin this deployment
 unpin-deployment = Unpin this deployment
 layered-packages = Layered Packages:
 
+apply-changes = Apply Changes
+add-packages = Add Packages
+remove-packages = Remove Packages
+
 configuration = Application Configuration
 theme = Theme
 
