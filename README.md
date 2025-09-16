@@ -17,7 +17,8 @@
 > [!WARNING]
 > For this app to work correctly you MUST disable automatic updates on GNOME Software/KDE Software Update...
 >
-> You can check this in GNOME Software > Preferences or KDE Settings > Software Update
+> You can check this in GNOME Software > Preferences or KDE Settings > Software Update.
+>
 > In Bazzite/UBlue distros it seems you can use `ujust _toggle-updates` (Check: https://github.com/ublue-os/bazzite/issues/2592)
 
 > [!CAUTION]
