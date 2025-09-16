@@ -327,7 +327,6 @@ impl UpdateApplications {
                 if applications.is_empty() {
                     Action::None
                 } else {
-                    #[allow(clippy::collapsible_else_if)]
                     if let Some(application) =
                         applications.iter_mut().find(|a| a.app_id == application_id)
                     {

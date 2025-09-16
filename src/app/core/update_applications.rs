@@ -207,7 +207,7 @@ impl Application {
 
                 // Parse available updates into a HashMap
                 let mut available_versions = HashMap::new();
-                #[allow(clippy::collapsible_if)]
+
                 if let Ok(Ok(cmd_output)) = all_updates_result {
                     if cmd_output.status.success() {
                         let output_str = String::from_utf8_lossy(&cmd_output.stdout);
@@ -238,7 +238,6 @@ impl Application {
                         // if we found the list, parse numbered entries
                         if found_list {
                             // parse lines like: "1.   org.gnome.Calculator stable  u   fedora  <   2,5 MB"
-                            #[allow(clippy::collapsible_if)]
                             if let Some(number_end) = trimmed.find('.') {
                                 if trimmed[..number_end]
                                     .chars()

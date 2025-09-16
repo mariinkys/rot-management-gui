@@ -1,24 +1,26 @@
+use iced::Task;
 use iced::time::Instant;
-use iced::widget::{button, container};
+use iced::widget::{Space, button, column, container, row, text};
 use iced::{Alignment, Element, Length};
-use iced::{Task, widget::text};
 
 use crate::app::style::{icon_button_style, icon_svg_style};
 use crate::app::{core::system_status::Deployment, widgets::toast::Toast};
-use crate::icons;
+use crate::{fl, icons};
 
 pub struct LayeredPackages {
-    state: State,
+    current_packages: Vec<String>,
+    current_tab: Tab,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     /// Asks to go back a screen                     
     Back,
-}
 
-pub enum State {
-    Ready { current_deployment: Deployment },
+    /// Call to switch to the AddPackages Tab
+    OpenAddPackagesTab,
+    /// Call to switch to the RemovePackages Tab
+    OpenRemovePackagesTab,
 }
 
 pub enum Action {
@@ -28,11 +30,39 @@ pub enum Action {
     AddToast(Toast),
 }
 
+/// Represents each possible open Tab of the LayeredPackages Subscreen
+#[derive(Debug)]
+enum Tab {
+    AddPackages {
+        package_name_input: String,
+        packages_to_add: Vec<String>,
+    },
+    RemovePackages {
+        packages_to_remove: Vec<String>,
+    },
+}
+
+impl Default for Tab {
+    fn default() -> Self {
+        Self::AddPackages {
+            package_name_input: String::new(),
+            packages_to_add: Vec::new(),
+        }
+    }
+}
+
 impl LayeredPackages {
     pub fn new(current_deployment: Deployment) -> (Self, Task<Message>) {
+        let current_packages: Vec<String> = current_deployment
+            .layered_packages
+            .split(' ')
+            .map(|s| s.trim().to_string())
+            .collect();
+
         (
             Self {
-                state: State::Ready { current_deployment },
+                current_packages,
+                current_tab: Tab::default(),
             },
             Task::none(),
         )
@@ -42,11 +72,69 @@ impl LayeredPackages {
     pub fn update(&mut self, message: Message, _now: Instant) -> Action {
         match message {
             Message::Back => Action::Back,
+            Message::OpenAddPackagesTab => {
+                if let Tab::RemovePackages { packages_to_remove } = &self.current_tab {
+                    if packages_to_remove.is_empty() {
+                        self.current_tab = Tab::AddPackages {
+                            package_name_input: String::new(),
+                            packages_to_add: Vec::new(),
+                        };
+                    } else {
+                        return Action::AddToast(Toast::warning_toast(
+                            "You have packages to remove selected, changes will be lost if you change Tab's",
+                        ));
+                    }
+                }
+
+                Action::None
+            }
+            Message::OpenRemovePackagesTab => {
+                if self.current_packages.is_empty() {
+                    return Action::AddToast(Toast::warning_toast(
+                        "You have no packages available to remove",
+                    ));
+                }
+
+                if let Tab::AddPackages {
+                    packages_to_add, ..
+                } = &self.current_tab
+                {
+                    if packages_to_add.is_empty() {
+                        self.current_tab = Tab::RemovePackages {
+                            packages_to_remove: Vec::new(),
+                        };
+                    } else {
+                        return Action::AddToast(Toast::warning_toast(
+                            "You have packages to add selected, changes will be lost if you change Tab's",
+                        ));
+                    }
+                }
+
+                Action::None
+            }
         }
     }
 
     pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
-        let content: Element<Message> = text("Layered Packages Content").into();
+        let tab_content = match &self.current_tab {
+            Tab::AddPackages {
+                package_name_input,
+                packages_to_add,
+            } => text("Add Packages Tab Content"),
+            Tab::RemovePackages { packages_to_remove } => text("Remove Packages Tab Content"),
+        };
+
+        let content: Element<Message> = column![
+            Space::new(Length::Fill, Length::Fixed(35.)),
+            row![button("Add Packages"), button("Remove Packages")],
+            tab_content
+        ]
+        .padding(20.)
+        .spacing(5.)
+        .height(Length::Fill)
+        .width(Length::Fill)
+        .align_x(Alignment::Center)
+        .into();
 
         let main_content = container(content)
             .align_x(Alignment::Center)
