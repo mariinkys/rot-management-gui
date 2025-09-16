@@ -4,16 +4,21 @@ use iced::widget::{Space, button, checkbox, column, container, row, text, text_i
 use iced::{Alignment, Element, Length};
 use iced::{Padding, Task};
 
-use crate::app::core::layered_packages::{CheckPackageError, check_package};
+use crate::app::core::layered_packages::{
+    CheckPackageError, add_packages, check_package, remove_packages,
+};
 use crate::app::style::{
     TabButtonPosition, danger_icon_button_style, icon_button_style, icon_svg_style,
     primary_button_style, rounded_button_combo_style, rounded_input_combo_style,
     rounderer_box_container_style, tab_button_style,
 };
+use crate::app::widgets::spinners::circular::Circular;
+use crate::app::widgets::spinners::easing;
 use crate::app::{core::system_status::Deployment, widgets::toast::Toast};
 use crate::{fl, icons};
 
 pub struct LayeredPackages {
+    applying_changes: bool,
     current_packages: Vec<String>,
     current_tab: Tab,
 }
@@ -38,6 +43,11 @@ pub enum Message {
     RemovePackageFromAddList(String),
     /// Toggles the package removal state
     TogglePackageToRemove(String, bool),
+
+    /// Attempts to apply the current changes, changes to apply vary depending on the current tab the user is on
+    ApplyChanges,
+    /// Callback after attempting to apply the current changes
+    ApplyChangesCallback(Result<(), anywho::Error>),
 }
 
 pub enum Action {
@@ -45,6 +55,7 @@ pub enum Action {
     Back,
     Run(Task<Message>),
     AddToast(Toast),
+    BackAndCheckReboot,
 }
 
 /// Represents each possible open Tab of the LayeredPackages Subscreen
@@ -101,6 +112,7 @@ impl LayeredPackages {
 
         (
             Self {
+                applying_changes: false,
                 current_packages,
                 current_tab: Tab::default(),
             },
@@ -237,10 +249,66 @@ impl LayeredPackages {
                 }
                 Action::None
             }
+            Message::ApplyChanges => match &self.current_tab {
+                Tab::AddPackages {
+                    packages_to_add, ..
+                } => {
+                    if !packages_to_add.is_empty() {
+                        self.applying_changes = true;
+                        Action::Run(Task::perform(
+                            add_packages(packages_to_add.clone()),
+                            Message::ApplyChangesCallback,
+                        ))
+                    } else {
+                        Action::AddToast(Toast::warning_toast("No packages to add"))
+                    }
+                }
+                Tab::RemovePackages { packages_to_remove } => {
+                    let packages_marked_to_remove: Vec<String> = packages_to_remove
+                        .iter()
+                        .filter(|x| x.1)
+                        .map(|x| x.0.clone())
+                        .collect();
+                    if !packages_marked_to_remove.is_empty() {
+                        self.applying_changes = true;
+                        Action::Run(Task::perform(
+                            remove_packages(packages_marked_to_remove.clone()),
+                            Message::ApplyChangesCallback,
+                        ))
+                    } else {
+                        Action::AddToast(Toast::warning_toast("No packages to remove"))
+                    }
+                }
+            },
+            Message::ApplyChangesCallback(result) => match result {
+                Ok(_) => Action::BackAndCheckReboot,
+                Err(err) => {
+                    self.applying_changes = false;
+                    Action::AddToast(Toast::error_toast(err))
+                }
+            },
         }
     }
 
     pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
+        if self.applying_changes {
+            return container(
+                column![
+                    text(fl!("applying-changes")),
+                    Circular::new()
+                        .easing(&easing::EMPHASIZED)
+                        .cycle_duration(std::time::Duration::from_secs_f32(5.0))
+                ]
+                .spacing(10.)
+                .align_x(Alignment::Center),
+            )
+            .align_x(Alignment::Center)
+            .align_y(Alignment::Center)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
+        }
+
         let tab_content = match &self.current_tab {
             Tab::AddPackages {
                 package_name_input,
@@ -378,7 +446,9 @@ impl LayeredPackages {
                         weight: iced::font::Weight::Bold,
                         ..Default::default()
                     }),
-                button(text(fl!("apply-changes"))).style(primary_button_style)
+                button(text(fl!("apply-changes")))
+                    .on_press(Message::ApplyChanges)
+                    .style(primary_button_style)
             ],
             row![
                 button(

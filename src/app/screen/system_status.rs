@@ -162,6 +162,9 @@ impl SystemStatus {
                         Action::Run(task.map(Message::LayeredPackages))
                     }
                     layered_packages::Action::AddToast(toast) => Action::AddToast(toast),
+                    layered_packages::Action::BackAndCheckReboot => {
+                        self.update(Message::CheckReboot, now)
+                    }
                 }
             }
             Message::OpenLayeredPackages => {

@@ -47,6 +47,7 @@ no-packages-add-list = No Packages on the Add List
 packages-to-add-footer = Packages to Add
 packages-to-remove-footer = Packages to Remove
 remove = Remove
+applying-changes = Applying changes, please wait...
 
 configuration = Application Configuration
 theme = Theme

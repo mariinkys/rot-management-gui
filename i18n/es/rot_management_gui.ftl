@@ -38,6 +38,17 @@ pin-deployment = Fijar este despliegue
 unpin-deployment = Desfijar este despliegue
 layered-packages = Paquetes Capa:
 
+apply-changes = Aplicar Cambios
+add-packages = Añadir Paquetes
+remove-packages = Eliminar Paquetes
+search-package-add-placeholder = Paquete a Añadir
+add = Añadir
+no-packages-add-list = No hay Paquetes por Añadir
+packages-to-add-footer = Paquetes a Añadir
+packages-to-remove-footer = Paquetes a Eliminar
+remove = Eliminar
+applying-changes = Aplicando cambios, porfavor espere...
+
 configuration = Configuración de la Aplicación
 theme = Tema
 
