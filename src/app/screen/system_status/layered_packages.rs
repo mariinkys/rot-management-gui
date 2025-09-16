@@ -1,9 +1,12 @@
 use iced::Task;
 use iced::time::Instant;
-use iced::widget::{Space, button, column, container, row, text};
+use iced::widget::{Space, button, column, container, row, text, text_input};
 use iced::{Alignment, Element, Length};
 
-use crate::app::style::{icon_button_style, icon_svg_style, primary_button_style};
+use crate::app::core::layered_packages::{CheckPackageError, check_package};
+use crate::app::style::{
+    danger_icon_button_style, icon_button_style, icon_svg_style, primary_button_style,
+};
 use crate::app::{core::system_status::Deployment, widgets::toast::Toast};
 use crate::{fl, icons};
 
@@ -21,6 +24,15 @@ pub enum Message {
     OpenAddPackagesTab,
     /// Call to switch to the RemovePackages Tab
     OpenRemovePackagesTab,
+
+    /// Callback when inputting text on Add Package Input
+    AddPackageInputUpdated(String),
+    /// Check if the package exists before adding it to the add list
+    CheckPackageBeforeAddList,
+    /// Callback after checking for the package
+    PackageToAddChecked(Result<String, CheckPackageError>),
+    /// Removes a package from the packages to add list
+    RemovePackageFromAddList(String),
 }
 
 pub enum Action {
@@ -112,6 +124,69 @@ impl LayeredPackages {
 
                 Action::None
             }
+            Message::AddPackageInputUpdated(new_value) => {
+                if let Tab::AddPackages {
+                    package_name_input, ..
+                } = &mut self.current_tab
+                {
+                    *package_name_input = new_value;
+                }
+
+                Action::None
+            }
+            Message::CheckPackageBeforeAddList => {
+                if let Tab::AddPackages {
+                    package_name_input,
+                    packages_to_add,
+                    ..
+                } = &self.current_tab
+                {
+                    let trimmed_package_name = package_name_input.trim().to_string();
+
+                    if packages_to_add.contains(&trimmed_package_name) {
+                        return Action::AddToast(Toast::warning_toast(
+                            "This package is already on the add list",
+                        ));
+                    }
+
+                    if !package_name_input.is_empty() {
+                        return Action::Run(Task::perform(
+                            check_package(trimmed_package_name),
+                            Message::PackageToAddChecked,
+                        ));
+                    }
+                }
+
+                Action::None
+            }
+            Message::PackageToAddChecked(result) => match result {
+                Ok(package_name) => {
+                    if let Tab::AddPackages {
+                        package_name_input,
+                        packages_to_add,
+                    } = &mut self.current_tab
+                    {
+                        *package_name_input = String::new();
+                        packages_to_add.push(package_name);
+                    }
+                    Action::None
+                }
+                Err(err) => match err {
+                    CheckPackageError::NotFound => {
+                        Action::AddToast(Toast::warning_toast("Package not found"))
+                    }
+                    CheckPackageError::Error(error) => Action::AddToast(Toast::error_toast(error)),
+                },
+            },
+            Message::RemovePackageFromAddList(package_name) => {
+                if let Tab::AddPackages {
+                    packages_to_add, ..
+                } = &mut self.current_tab
+                {
+                    packages_to_add.retain(|n| *n != package_name);
+                }
+                Action::None
+            }
         }
     }
 
@@ -120,8 +195,55 @@ impl LayeredPackages {
             Tab::AddPackages {
                 package_name_input,
                 packages_to_add,
-            } => text("Add Packages Tab Content"),
-            Tab::RemovePackages { packages_to_remove } => text("Remove Packages Tab Content"),
+            } => {
+                let search_package_input_row = row![
+                    text_input(
+                        fl!("search-package-add-placeholder").as_str(),
+                        package_name_input,
+                    )
+                    .on_input(Message::AddPackageInputUpdated)
+                    .on_paste(Message::AddPackageInputUpdated)
+                    .on_submit(Message::CheckPackageBeforeAddList)
+                    .width(Length::Fill),
+                    button(text(fl!("add")))
+                        .style(primary_button_style)
+                        .on_press(Message::CheckPackageBeforeAddList)
+                ]
+                .spacing(3.);
+
+                let packages_to_add_content: Element<Message> = if packages_to_add.is_empty() {
+                    text(fl!("no-packages-add-list")).into()
+                } else {
+                    packages_to_add
+                        .iter()
+                        .fold(column![].spacing(3.).width(Length::Fill), |col, package| {
+                            col.push(
+                                container(
+                                    row![
+                                        text(package).width(Length::Fill),
+                                        button(
+                                            icons::get_icon("user-trash-full-symbolic", 18)
+                                                .style(icon_svg_style)
+                                        )
+                                        .on_press(Message::RemovePackageFromAddList(
+                                            package.to_string()
+                                        ))
+                                        .style(danger_icon_button_style),
+                                    ]
+                                    .width(Length::Fill),
+                                )
+                                .style(container::secondary)
+                                .align_y(Alignment::Center)
+                                .width(Length::Fill)
+                                .padding(3.),
+                            )
+                        })
+                        .into()
+                };
+
+                column![search_package_input_row, packages_to_add_content].spacing(3.)
+            }
+            Tab::RemovePackages { packages_to_remove } => todo!(),
         };
 
         let content: Element<Message> = column![

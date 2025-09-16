@@ -22,6 +22,17 @@ pub fn icon_button_style(theme: &Theme, status: button::Status) -> button::Style
     style
 }
 
+pub fn danger_icon_button_style(theme: &Theme, status: button::Status) -> button::Style {
+    let mut style = button::danger(theme, status);
+    style.border.radius = iced::border::Radius {
+        top_left: 25.0,
+        top_right: 25.0,
+        bottom_left: 25.0,
+        bottom_right: 25.0,
+    };
+    style
+}
+
 pub enum AccordionButtonPosition {
     Top,
     Middle,

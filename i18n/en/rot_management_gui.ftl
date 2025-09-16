@@ -41,6 +41,9 @@ layered-packages = Layered Packages:
 apply-changes = Apply Changes
 add-packages = Add Packages
 remove-packages = Remove Packages
+search-package-add-placeholder = Package to Add
+add = Add
+no-packages-add-list = No Packages on the Add List
 
 configuration = Application Configuration
 theme = Theme
