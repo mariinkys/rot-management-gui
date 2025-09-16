@@ -31,12 +31,23 @@ rollback-warning = No cierre este programa
 loading = Cargando...
 
 system-status = Estado del Sistema
-system-status-description = Estado del Sistema
+system-status-description = Estado del Sistema (Ver, Fijar, Desfijar... tus Despliegues)
 no-deployments-error = Error, no se encontraron despliegues!
 manage-layered-packages = Paquetes "Capa"
 pin-deployment = Fijar este despliegue
 unpin-deployment = Desfijar este despliegue
 layered-packages = Paquetes Capa:
+
+apply-changes = Aplicar Cambios
+add-packages = Añadir Paquetes
+remove-packages = Eliminar Paquetes
+search-package-add-placeholder = Paquete a Añadir
+add = Añadir
+no-packages-add-list = No hay Paquetes por Añadir
+packages-to-add-footer = Paquetes a Añadir
+packages-to-remove-footer = Paquetes a Eliminar
+remove = Eliminar
+applying-changes = Aplicando cambios, porfavor espere...
 
 configuration = Configuración de la Aplicación
 theme = Tema

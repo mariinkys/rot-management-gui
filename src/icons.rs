@@ -44,6 +44,7 @@ impl IconCache {
         bundle!("help-info-symbolic", 18);
         bundle!("pin-symbolic", 18);
         bundle!("unpin-symbolic", 18);
+        bundle!("user-trash-full-symbolic", 18);
         Self { cache }
     }
 

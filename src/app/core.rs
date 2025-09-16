@@ -3,6 +3,7 @@
 use anywho::anywho;
 
 pub mod config;
+pub mod layered_packages;
 pub mod rollback;
 pub mod system_status;
 pub mod update_applications;

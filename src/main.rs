@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::collapsible_else_if)]
 
 use app::FAManagement;
 use iced::{

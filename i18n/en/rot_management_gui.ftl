@@ -31,12 +31,23 @@ rollback-warning = Do not close this program
 loading = Loading...
 
 system-status = System Status
-system-status-description = System Status 
+system-status-description = System Status (View, Pin, Unpin... your Deployments)
 no-deployments-error = Error, no deployments found!
 manage-layered-packages = Manage Layered Packages
 pin-deployment = Pin this deployment
 unpin-deployment = Unpin this deployment
 layered-packages = Layered Packages:
+
+apply-changes = Apply Changes
+add-packages = Add Packages
+remove-packages = Remove Packages
+search-package-add-placeholder = Package to Add
+add = Add
+no-packages-add-list = No Packages on the Add List
+packages-to-add-footer = Packages to Add
+packages-to-remove-footer = Packages to Remove
+remove = Remove
+applying-changes = Applying changes, please wait...
 
 configuration = Application Configuration
 theme = Theme
