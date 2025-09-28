@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Rule, Space, button, column, container, row, scrollable, text, tooltip};
+use iced::widget::{button, column, container, row, rule, scrollable, space, text, tooltip};
 use iced::{Alignment, Element, Length, Subscription, Task};
 
 use crate::app::core::system_status::Deployment;
@@ -206,7 +206,7 @@ impl SystemStatus {
             .height(Length::Fill)
             .into(),
             State::PendingReboot => column![
-                Space::new(Length::Fill, Length::Fixed(35.)),
+                space().width(Length::Fill).height(Length::Fixed(35.)),
                 text(fl!("reboot-required"))
                     .size(24)
                     .font(iced::font::Font {
@@ -231,7 +231,7 @@ impl SystemStatus {
                 SubScreen::Main { deployments } => {
                     if deployments.is_empty() {
                         column![
-                            Space::new(Length::Fill, Length::Fixed(35.)),
+                            space().width(Length::Fill).height(Length::Fixed(35.)),
                             text(fl!("no-deployments-error"))
                                 .width(Length::Fill)
                                 .size(18)
@@ -260,7 +260,7 @@ impl SystemStatus {
                         }
 
                         column![
-                            Space::new(Length::Fill, Length::Fixed(35.)),
+                            space().width(Length::Fill).height(Length::Fixed(35.)),
                             row![
                                 text(fl!("system-status"))
                                     .width(Length::Fill)
@@ -412,7 +412,7 @@ fn deployment_card<'a>(deployment: &'a Deployment) -> Element<'a, Message> {
 
     container(column![
         card_header,
-        Rule::horizontal(1.),
+        rule::horizontal(1),
         deployment_content
     ])
     .style(container::rounded_box)

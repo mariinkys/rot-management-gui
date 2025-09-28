@@ -8,8 +8,7 @@ use crate::{
     icons,
 };
 use iced::{
-    Alignment, Length, Renderer, Theme,
-    widget::{Button, Space, button, column, container, image, row, svg, text},
+    widget::{button, column, container, image, row, space, svg, text, Button}, Alignment, Length, Renderer, Theme
 };
 use std::fmt::Debug;
 
@@ -69,7 +68,7 @@ where
     };
 
     let icon: iced::Element<'_, Message> = match icon {
-        AccordionIcon::None => Space::new(0, 0).into(),
+        AccordionIcon::None => space().into(),
         AccordionIcon::SvgPath { svg_path } => {
             let handle = svg::Handle::from_path(svg_path);
             container(
@@ -117,7 +116,7 @@ where
             .cycle_duration(std::time::Duration::from_secs_f32(5.0))
             .into()
     } else {
-        Space::new(0, 0).into()
+        space().into()
     };
 
     button(

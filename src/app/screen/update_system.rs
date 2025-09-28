@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Rule, Space, button, column, container, responsive, row, scrollable, text};
+use iced::widget::{button, column, container, responsive, row, rule, scrollable, space, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::update_system::SystemUpdate;
@@ -73,7 +73,7 @@ impl UpdateSystem {
             State::Ready { update, .. } => {
                 if let Some(system_update) = update {
                     column![
-                        Space::new(Length::Fill, Length::Fixed(35.)),
+                        space().width(Length::Fill).height(Length::Fixed(35.)),
                         row![
                             text(fl!("system-update"))
                                 .width(Length::Fill)
@@ -95,7 +95,7 @@ impl UpdateSystem {
                     .align_x(Alignment::Center)
                 } else {
                     column![
-                        Space::new(Length::Fill, Length::Fixed(35.)),
+                        space().width(Length::Fill).height(Length::Fixed(35.)),
                         text(fl!("no-updates"))
                             .width(Length::Fill)
                             .size(18)
@@ -114,7 +114,7 @@ impl UpdateSystem {
                 }
             }
             State::PendingReboot => column![
-                Space::new(Length::Fill, Length::Fixed(35.)),
+                space().width(Length::Fill).height(Length::Fixed(35.)),
                 text(fl!("reboot-required"))
                     .size(24)
                     .font(iced::font::Font {
@@ -317,7 +317,7 @@ fn system_update_card<'a>(system_update: &'a SystemUpdate) -> iced::Element<'a, 
 
     container(column![
         card_header,
-        Rule::horizontal(1.),
+        rule::horizontal(1),
         system_update_content
     ])
     .style(container::rounded_box)

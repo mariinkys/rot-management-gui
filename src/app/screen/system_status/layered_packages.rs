@@ -1,6 +1,6 @@
 use iced::time::Instant;
 use iced::widget::text::LineHeight;
-use iced::widget::{Space, button, checkbox, column, container, row, text, text_input};
+use iced::widget::{button, checkbox, column, container, row, space, text, text_input};
 use iced::{Alignment, Element, Length};
 use iced::{Padding, Task};
 
@@ -437,7 +437,7 @@ impl LayeredPackages {
         };
 
         let content: Element<Message> = column![
-            Space::new(Length::Fill, Length::Fixed(35.)),
+            space().width(Length::Fill).height(Length::Fixed(35.)),
             row![
                 text(fl!("manage-layered-packages"))
                     .width(Length::Fill)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Space, button, column, container, row, scrollable, text};
+use iced::widget::{button, column, container, row, scrollable, space, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::update_applications::{
@@ -92,7 +92,7 @@ impl UpdateApplications {
 
         let content = if applications.is_empty() {
             column![
-                Space::new(Length::Fill, Length::Fixed(35.)),
+                space().width(Length::Fill).height(Length::Fixed(35.)),
                 text(fl!("no-updates"))
                     .width(Length::Fill)
                     .size(18)
@@ -184,7 +184,7 @@ impl UpdateApplications {
             }
 
             column![
-                Space::new(Length::Fill, Length::Fixed(35.)),
+                space().width(Length::Fill).height(Length::Fixed(35.)),
                 row![
                     text(fl!("application-updates"))
                         .width(Length::Fill)

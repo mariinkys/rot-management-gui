@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use iced::time::Instant;
-use iced::widget::{Space, button, column, container, responsive, text};
+use iced::widget::{button, column, container, responsive, space, text};
 use iced::{Alignment, Length, Subscription, Task};
 
 use crate::app::core::rollback::rollback;
@@ -66,7 +66,7 @@ impl Rollback {
     pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
         let content = match &self.state {
             State::Ready => column![
-                Space::new(Length::Fill, Length::Fixed(35.)),
+                space().width(Length::Fill).height(Length::Fixed(35.)),
                 text(fl!("rollback"))
                     .size(24)
                     .font(iced::font::Font {
@@ -87,7 +87,7 @@ impl Rollback {
             .width(Length::Fill)
             .align_x(Alignment::Center),
             State::PendingReboot => column![
-                Space::new(Length::Fill, Length::Fixed(35.)),
+                space().width(Length::Fill).height(Length::Fixed(35.)),
                 text(fl!("reboot-required"))
                     .size(24)
                     .font(iced::font::Font {
