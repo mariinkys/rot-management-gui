@@ -39,6 +39,7 @@ Special thanks to Simon and Catalina for their patience and confidence to switch
 
 ## TODO
 
+- Rework how do we handle command parsing, I keep encountering edge cases in flatpak updating, system status and system updating. 
 - Upgrading Between Major Versions (https://docs.fedoraproject.org/en-US/fedora-silverblue/updates-upgrades-rollbacks/#upgrading)
 
 ## Attributions
