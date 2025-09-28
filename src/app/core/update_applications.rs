@@ -318,6 +318,7 @@ impl Application {
         freedesktop_icons::lookup(app_id)
             .force_svg()
             .with_cache()
+            .with_size(256)
             .find()
             .and_then(|path| {
                 if let Some(ext) = path.extension().and_then(|ext| ext.to_str()) {

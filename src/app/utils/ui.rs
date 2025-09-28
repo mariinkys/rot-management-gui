@@ -8,7 +8,8 @@ use crate::{
     icons,
 };
 use iced::{
-    widget::{button, column, container, image, row, space, svg, text, Button}, Alignment, Length, Renderer, Theme
+    Alignment, Length, Renderer, Theme,
+    widget::{Button, button, column, container, image, row, space, svg, text},
 };
 use std::fmt::Debug;
 
