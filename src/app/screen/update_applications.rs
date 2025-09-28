@@ -145,10 +145,7 @@ impl UpdateApplications {
                     applications_accordion = applications_accordion.push(accordion_button(
                         AccordionButtonPosition::Top,
                         app.name.to_string(),
-                        format!(
-                            "{} >>> {} (Hash may be different)",
-                            app.current_version, app.latest_version
-                        ),
+                        app.latest_version.clone(),
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
@@ -158,10 +155,7 @@ impl UpdateApplications {
                     applications_accordion = applications_accordion.push(accordion_button(
                         AccordionButtonPosition::Bottom,
                         app.name.to_string(),
-                        format!(
-                            "{} >>> {} (Hash may be different)",
-                            app.current_version, app.latest_version
-                        ),
+                        app.latest_version.clone(),
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
@@ -171,10 +165,7 @@ impl UpdateApplications {
                     applications_accordion = applications_accordion.push(accordion_button(
                         AccordionButtonPosition::Middle,
                         app.name.to_string(),
-                        format!(
-                            "{} >>> {} (Hash may be different)",
-                            app.current_version, app.latest_version
-                        ),
+                        app.latest_version.clone(),
                         icon,
                         Message::UpdateSingleApplication(app.app_id.clone()),
                         button_status,
