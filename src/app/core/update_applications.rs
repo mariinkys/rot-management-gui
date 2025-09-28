@@ -11,7 +11,7 @@ pub struct Application {
     pub name: String,
     pub app_id: String,
     pub icon: Option<AppIcon>,
-    pub current_version: String,
+    //pub current_version: String,
     pub latest_version: String,
     pub application_status: ApplicationStatus,
 }
@@ -34,14 +34,6 @@ impl Application {
     pub async fn get_all_available_updates() -> Result<Vec<Application>, anywho::Error> {
         let mut applications = Vec::new();
 
-        let installed_apps = match Self::get_installed_applications().await {
-            Ok(apps) => apps,
-            Err(e) => {
-                eprintln!("Failed to get installed applications: {}", e);
-                return Err(anywho!("Failed to get installed applications: {}", e));
-            }
-        };
-
         let available_updates = match Self::get_available_updates().await {
             Ok(updates) => updates,
             Err(e) => {
@@ -51,60 +43,24 @@ impl Application {
         };
 
         for (app_id, latest_version) in available_updates {
-            if let Some(current_version) = installed_apps.get(&app_id) {
-                let icon_path = Self::get_app_icon(&app_id);
-                let display_name = Self::get_app_display_name(&app_id)
-                    .await
-                    .unwrap_or(app_id.clone());
+            // if let Some(current_version) = installed_apps.get(&app_id) {
+            let icon_path = Self::get_app_icon(&app_id);
+            let display_name = Self::get_app_display_name(&app_id)
+                .await
+                .unwrap_or(app_id.clone());
 
-                applications.push(Application {
-                    name: display_name,
-                    app_id,
-                    icon: icon_path,
-                    current_version: current_version.to_string(),
-                    latest_version,
-                    application_status: ApplicationStatus::default(),
-                });
-            }
+            applications.push(Application {
+                name: display_name,
+                app_id,
+                icon: icon_path,
+                //current_version: current_version.to_string(),
+                latest_version,
+                application_status: ApplicationStatus::default(),
+            });
+            // }
         }
 
         Ok(applications)
-    }
-
-    /// Get all installed Flatpak applications with their versions
-    async fn get_installed_applications() -> Result<HashMap<String, String>, anywho::Error> {
-        let output = run_command(
-            "flatpak",
-            &["list", "--app", "--columns=application,version"],
-        )
-        .await;
-
-        let output = match output {
-            Ok(output) => output,
-            Err(err) => return Err(anywho!("{}", err)),
-        };
-
-        if !output.status.success() {
-            return Err(anywho!(
-                "flatpak list failed: {}",
-                String::from_utf8_lossy(&output.stderr)
-            ));
-        }
-
-        let mut apps = HashMap::new();
-        let output_str = String::from_utf8_lossy(&output.stdout);
-
-        for line in output_str.lines().skip(1) {
-            // Skip header
-            let parts: Vec<&str> = line.split('\t').collect();
-            if parts.len() >= 2 {
-                let app_id = parts[0].trim().to_string();
-                let version = parts[1].trim().to_string();
-                apps.insert(app_id, version);
-            }
-        }
-
-        Ok(apps)
     }
 
     /// Returns the available updates that can actually be updated as HashMap<app_id, version>
