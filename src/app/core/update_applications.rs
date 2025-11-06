@@ -102,10 +102,8 @@ impl Application {
                     Ok(remote_versions) => {
                         let mut updates = HashMap::new();
 
-                        // Create a mapping of normalized ref names to app IDs
                         let mut app_id_by_ref = HashMap::new();
                         for (app_id, app_info) in &installed_apps {
-                            // Store both normalized and original ref formats
                             let normalized_ref = app_info
                                 .ref_name
                                 .strip_prefix("app/")
@@ -115,7 +113,7 @@ impl Application {
                             app_id_by_ref.insert(normalized_ref, app_id.clone());
                         }
 
-                        // For each remote version, find the corresponding app ID
+                        // for each remote version, find the corresponding app ID
                         for (remote_ref, version) in remote_versions {
                             if let Some(app_id) = app_id_by_ref.get(&remote_ref) {
                                 updates.insert(app_id.clone(), version);
