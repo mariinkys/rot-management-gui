@@ -2,7 +2,6 @@
 
 use anywho::anywho;
 use std::collections::HashMap;
-use std::process::Command;
 
 use crate::app::core::run_command;
 
@@ -11,7 +10,6 @@ pub struct Application {
     pub name: String,
     pub app_id: String,
     pub icon: Option<AppIcon>,
-    //pub current_version: String,
     pub latest_version: String,
     pub application_status: ApplicationStatus,
 }
@@ -29,6 +27,14 @@ pub enum ApplicationStatus {
     NotUpdating,
 }
 
+/// Needed for internal (update_applications) usage
+#[derive(Debug)]
+struct AppInfo {
+    version: String,
+    ref_name: String,
+    origin: String,
+}
+
 impl Application {
     /// Returns a Vector of all [`Application`] that have available updates
     pub async fn get_all_available_updates() -> Result<Vec<Application>, anywho::Error> {
@@ -43,7 +49,6 @@ impl Application {
         };
 
         for (app_id, latest_version) in available_updates {
-            // if let Some(current_version) = installed_apps.get(&app_id) {
             let icon_path = Self::get_app_icon(&app_id);
             let display_name = Self::get_app_display_name(&app_id)
                 .await
@@ -53,11 +58,9 @@ impl Application {
                 name: display_name,
                 app_id,
                 icon: icon_path,
-                //current_version: current_version.to_string(),
                 latest_version,
                 application_status: ApplicationStatus::default(),
             });
-            // }
         }
 
         Ok(applications)
@@ -65,186 +68,216 @@ impl Application {
 
     /// Returns the available updates that can actually be updated as HashMap<app_id, version>
     async fn get_available_updates() -> Result<HashMap<String, String>, anywho::Error> {
-        use std::sync::Arc;
-        use tokio::sync::Mutex;
-        use tokio::task;
+        use futures::future::join_all;
+        use std::collections::HashMap;
 
         println!("Checking for updates...");
-
-        let updates = Arc::new(Mutex::new(HashMap::new()));
         let installations = vec!["--user", "--system"];
         let mut handles = Vec::new();
 
-        for installation_flag in installations {
-            let updates = updates.clone();
-            let installation = installation_flag.to_string();
+        for &installation in &installations {
+            let installation_type = if installation == "--user" {
+                "user"
+            } else {
+                "system"
+            };
+            println!("Checking {} installation for updates...", installation_type);
 
-            let handle = task::spawn(async move {
-                println!(
-                    "Checking {} installation...",
-                    if installation == "--user" {
-                        "user"
-                    } else {
-                        "system"
+            let handle = tokio::spawn(async move {
+                // get installed apps with versions and origins
+                let installed_apps = match Self::get_installed_apps(installation).await {
+                    Ok(apps) => apps,
+                    Err(e) => {
+                        eprintln!(
+                            "Failed to get installed apps for {}: {}",
+                            installation_type, e
+                        );
+                        return HashMap::new();
                     }
-                );
+                };
 
-                // get all available updates with versions in one call
-                let all_updates_task = task::spawn_blocking({
-                    let installation = installation.clone();
-                    move || {
-                        if super::is_flatpak() {
-                            Command::new("flatpak-spawn")
-                                .args([
-                                    "--host",
-                                    "flatpak",
-                                    "remote-ls",
-                                    &installation,
-                                    "--updates",
-                                    "--app",
-                                    "--columns=application,version",
-                                ])
-                                .output()
-                        } else {
-                            Command::new("flatpak")
-                                .args([
-                                    "remote-ls",
-                                    &installation,
-                                    "--updates",
-                                    "--app",
-                                    "--columns=application,version",
-                                ])
-                                .output()
-                        }
-                    }
-                });
-
-                // get the list of actually updatable apps
-                let updatable_apps_task = task::spawn_blocking({
-                    let installation = installation.clone();
-                    move || {
-                        if super::is_flatpak() {
-                            Command::new("flatpak-spawn")
-                                .args(["--host", "flatpak", "update", &installation])
-                                .stdin(std::process::Stdio::piped())
-                                .stdout(std::process::Stdio::piped())
-                                .stderr(std::process::Stdio::piped())
-                                .spawn()
-                                .and_then(|mut child| {
-                                    // send 'n' to decline the update, so we just get the list
-                                    if let Some(mut stdin) = child.stdin.take() {
-                                        use std::io::Write;
-                                        let _ = stdin.write_all(b"n\n");
-                                    }
-                                    child.wait_with_output()
-                                })
-                        } else {
-                            Command::new("flatpak")
-                                .args(["update", &installation])
-                                .stdin(std::process::Stdio::piped())
-                                .stdout(std::process::Stdio::piped())
-                                .stderr(std::process::Stdio::piped())
-                                .spawn()
-                                .and_then(|mut child| {
-                                    // send 'n' to decline the update, so we just get the list
-                                    if let Some(mut stdin) = child.stdin.take() {
-                                        use std::io::Write;
-                                        let _ = stdin.write_all(b"n\n");
-                                    }
-                                    child.wait_with_output()
-                                })
-                        }
-                    }
-                });
-
-                // Wait for both tasks to complete
-                let (all_updates_result, updatable_apps_result) =
-                    tokio::join!(all_updates_task, updatable_apps_task);
-
-                // Parse available updates into a HashMap
-                let mut available_versions = HashMap::new();
-
-                if let Ok(Ok(cmd_output)) = all_updates_result {
-                    if cmd_output.status.success() {
-                        let output_str = String::from_utf8_lossy(&cmd_output.stdout);
-                        for line in output_str.lines() {
-                            let parts: Vec<&str> = line.split_whitespace().collect();
-                            if parts.len() >= 2 {
-                                available_versions
-                                    .insert(parts[0].to_string(), parts[1].to_string());
-                            }
-                        }
-                    }
+                if installed_apps.is_empty() {
+                    return HashMap::new();
                 }
 
-                // parse updatable apps
-                if let Ok(Ok(cmd_output)) = updatable_apps_result {
-                    let output_str = String::from_utf8_lossy(&cmd_output.stdout);
-                    let mut local_updates = HashMap::new();
-                    let mut found_list = false;
+                // get remote versions for installed apps
+                match Self::get_remote_versions(&installed_apps, installation).await {
+                    Ok(remote_versions) => {
+                        let mut updates = HashMap::new();
+                        let mut remote_version_by_app_id = HashMap::new();
 
-                    for line in output_str.lines() {
-                        let trimmed = line.trim();
-
-                        // look for the start of the numbered list
-                        if !found_list && trimmed.starts_with("1.") {
-                            found_list = true;
+                        for (ref_name, version) in &remote_versions {
+                            if let Some(app_id) = Self::extract_app_id_from_ref(ref_name) {
+                                remote_version_by_app_id.insert(app_id, version.clone());
+                            }
                         }
 
-                        // if we found the list, parse numbered entries
-                        if found_list {
-                            // parse lines like: "1.   org.gnome.Calculator stable  u   fedora  <   2,5 MB"
-                            if let Some(number_end) = trimmed.find('.') {
-                                if trimmed[..number_end]
-                                    .chars()
-                                    .all(|c| c.is_ascii_digit() || c.is_whitespace())
-                                {
-                                    let after_number = &trimmed[number_end + 1..].trim();
-                                    let parts: Vec<&str> =
-                                        after_number.split_whitespace().collect();
-
-                                    if !parts.is_empty() {
-                                        let app_id = parts[0];
-
-                                        // look up version from pre-fetched map
-                                        if let Some(version) = available_versions.get(app_id) {
-                                            println!(
-                                                "Found updatable app: {} -> {}",
-                                                app_id, version
-                                            );
-                                            local_updates
-                                                .insert(app_id.to_string(), version.clone());
-                                        }
-                                    }
+                        for (app_id, app_info) in &installed_apps {
+                            if let Some(remote_version) = remote_version_by_app_id.get(app_id) {
+                                if app_info.version != *remote_version {
+                                    updates.insert(app_id.clone(), remote_version.clone());
                                 }
                             }
                         }
-                    }
 
-                    let mut global_updates = updates.lock().await;
-                    global_updates.extend(local_updates);
+                        updates
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Failed to get remote versions for {}: {}",
+                            installation_type, e
+                        );
+                        HashMap::new()
+                    }
                 }
             });
 
             handles.push(handle);
         }
 
-        // wait for all installations to be checked
-        for handle in handles {
-            if let Err(e) = handle.await {
-                eprintln!("Installation check task panicked: {:?}", e);
+        let results = join_all(handles).await;
+        let mut all_updates = HashMap::new();
+        for updates in results.into_iter().flatten() {
+            all_updates.extend(updates);
+        }
+
+        if all_updates.is_empty() {
+            Err(anywho!("No updates found"))
+        } else {
+            println!("Found {} total updatable apps", all_updates.len());
+            Ok(all_updates)
+        }
+    }
+
+    /// Get installed apps with their version, ref, and origin remote
+    async fn get_installed_apps(
+        installation: &str,
+    ) -> Result<HashMap<String, AppInfo>, anywho::Error> {
+        let args = vec![
+            "list",
+            installation,
+            "--app",
+            "--columns=application,version,origin,ref",
+        ];
+
+        let output = super::run_command("flatpak", &args)
+            .await
+            .map_err(|e| anywho!("Failed to list installed apps: {}", e))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anywho!("Failed to list apps: {}", stderr.trim()));
+        }
+
+        let mut apps = HashMap::new();
+        for line in String::from_utf8_lossy(&output.stdout).lines() {
+            let parts: Vec<&str> = line.split('\t').collect();
+            if parts.len() >= 4 {
+                let app_id = parts[0].trim().to_string();
+                let version = parts[1].trim().to_string();
+                let origin = parts[2].trim().to_string();
+                let ref_name = parts[3].trim().to_string();
+
+                apps.insert(
+                    app_id,
+                    AppInfo {
+                        version,
+                        ref_name,
+                        origin,
+                    },
+                );
+            }
+        }
+        Ok(apps)
+    }
+
+    /// Get remote versions for installed apps grouped by origin remote
+    async fn get_remote_versions(
+        installed_apps: &HashMap<String, AppInfo>,
+        installation: &str,
+    ) -> Result<HashMap<String, String>, anywho::Error> {
+        let mut remotes: HashMap<String, Vec<String>> = HashMap::new();
+        for app in installed_apps.values() {
+            remotes
+                .entry(app.origin.clone())
+                .or_default()
+                .push(app.ref_name.clone());
+        }
+
+        let mut remote_versions = HashMap::new();
+
+        for (remote, refs) in remotes {
+            if refs.is_empty() {
+                continue;
+            }
+
+            println!(
+                "Getting remote versions from {} for {} refs",
+                remote,
+                refs.len()
+            );
+
+            let args = vec![
+                "remote-ls",
+                installation,
+                "--updates",
+                "--app",
+                "--columns=ref,version",
+                &remote,
+            ];
+
+            let output = super::run_command("flatpak", &args)
+                .await
+                .map_err(|e| anywho!("Failed to get remote info from {}: {}", remote, e))?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                eprintln!(
+                    "Warning: remote-ls failed for {}: {}",
+                    remote,
+                    stderr.trim()
+                );
+                continue;
+            }
+
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            for line in output_str.lines() {
+                let trimmed = line.trim();
+                if trimmed.is_empty() {
+                    continue;
+                }
+
+                // Split by tab character
+                let parts: Vec<&str> = trimmed.split('\t').collect();
+                if parts.len() >= 2 {
+                    let ref_name = parts[0].trim().to_string();
+                    let version = parts[1].trim().to_string();
+                    remote_versions.insert(ref_name, version);
+                }
             }
         }
 
-        let updates = Arc::try_unwrap(updates)
-            .map_err(|_| anywho!("Failed to unwrap Arc"))?
-            .into_inner();
+        println!("Found {} remote versions", remote_versions.len());
+        Ok(remote_versions)
+    }
 
-        if !updates.is_empty() {
-            println!("Found {} total updatable apps", updates.len());
-            Ok(updates)
+    /// Extract app ID from a ref name
+    fn extract_app_id_from_ref(ref_name: &str) -> Option<String> {
+        let parts: Vec<&str> = ref_name.split('/').collect();
+
+        if parts.len() >= 3 {
+            // Handle formats like:
+            // - "app/org.signal.Signal/x86_64/stable" -> "org.signal.Signal"
+            // - "runtime/org.freedesktop.Platform/x86_64/24.08" -> "org.freedesktop.Platform"
+            // - "org.signal.Signal/x86_64/stable" -> "org.signal.Signal"
+
+            if parts[0] == "app" || parts[0] == "runtime" {
+                Some(parts[1].to_string())
+            } else {
+                Some(parts[0].to_string())
+            }
         } else {
-            Err(anywho!("No updates found"))
+            None
         }
     }
 
