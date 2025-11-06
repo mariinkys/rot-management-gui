@@ -1,5 +1,3 @@
-// TODO: Explore using tokio::Command instead of the std:: one
-
 use anywho::anywho;
 use std::collections::HashMap;
 
@@ -30,7 +28,6 @@ pub enum ApplicationStatus {
 /// Needed for internal (update_applications) usage
 #[derive(Debug)]
 struct AppInfo {
-    version: String,
     ref_name: String,
     origin: String,
 }
@@ -104,18 +101,33 @@ impl Application {
                 match Self::get_remote_versions(&installed_apps, installation).await {
                     Ok(remote_versions) => {
                         let mut updates = HashMap::new();
-                        let mut remote_version_by_app_id = HashMap::new();
 
-                        for (ref_name, version) in &remote_versions {
-                            if let Some(app_id) = Self::extract_app_id_from_ref(ref_name) {
-                                remote_version_by_app_id.insert(app_id, version.clone());
-                            }
+                        // Create a mapping of normalized ref names to app IDs
+                        let mut app_id_by_ref = HashMap::new();
+                        for (app_id, app_info) in &installed_apps {
+                            // Store both normalized and original ref formats
+                            let normalized_ref = app_info
+                                .ref_name
+                                .strip_prefix("app/")
+                                .unwrap_or(&app_info.ref_name)
+                                .to_string();
+                            app_id_by_ref.insert(app_info.ref_name.clone(), app_id.clone());
+                            app_id_by_ref.insert(normalized_ref, app_id.clone());
                         }
 
-                        for (app_id, app_info) in &installed_apps {
-                            if let Some(remote_version) = remote_version_by_app_id.get(app_id) {
-                                if app_info.version != *remote_version {
-                                    updates.insert(app_id.clone(), remote_version.clone());
+                        // For each remote version, find the corresponding app ID
+                        for (remote_ref, version) in remote_versions {
+                            if let Some(app_id) = app_id_by_ref.get(&remote_ref) {
+                                updates.insert(app_id.clone(), version);
+                            } else if let Some(app_id) =
+                                app_id_by_ref.get(&format!("app/{}", remote_ref))
+                            {
+                                updates.insert(app_id.clone(), version);
+                            } else if let Some(app_id) = Self::extract_app_id_from_ref(&remote_ref)
+                            {
+                                // Final fallback: try to match by app ID
+                                if installed_apps.contains_key(&app_id) {
+                                    updates.insert(app_id, version);
                                 }
                             }
                         }
@@ -149,7 +161,7 @@ impl Application {
         }
     }
 
-    /// Get installed apps with their version, ref, and origin remote
+    /// Get installed apps with their ref, and origin remote
     async fn get_installed_apps(
         installation: &str,
     ) -> Result<HashMap<String, AppInfo>, anywho::Error> {
@@ -174,18 +186,11 @@ impl Application {
             let parts: Vec<&str> = line.split('\t').collect();
             if parts.len() >= 4 {
                 let app_id = parts[0].trim().to_string();
-                let version = parts[1].trim().to_string();
+                // let version = parts[1].trim().to_string();
                 let origin = parts[2].trim().to_string();
                 let ref_name = parts[3].trim().to_string();
 
-                apps.insert(
-                    app_id,
-                    AppInfo {
-                        version,
-                        ref_name,
-                        origin,
-                    },
-                );
+                apps.insert(app_id, AppInfo { ref_name, origin });
             }
         }
         Ok(apps)
@@ -265,19 +270,33 @@ impl Application {
     fn extract_app_id_from_ref(ref_name: &str) -> Option<String> {
         let parts: Vec<&str> = ref_name.split('/').collect();
 
-        if parts.len() >= 3 {
-            // Handle formats like:
-            // - "app/org.signal.Signal/x86_64/stable" -> "org.signal.Signal"
-            // - "runtime/org.freedesktop.Platform/x86_64/24.08" -> "org.freedesktop.Platform"
-            // - "org.signal.Signal/x86_64/stable" -> "org.signal.Signal"
+        // Handle all possible ref formats:
+        // - app/org.fedoraproject.MediaWriter/x86_64/stable
+        // - runtime/org.kde.Platform/x86_64/6.9
+        // - org.fedoraproject.MediaWriter/x86_64/stable
+        // - extension/org.gnome.Shell.Extensions/x86_64/stable
 
-            if parts[0] == "app" || parts[0] == "runtime" {
-                Some(parts[1].to_string())
-            } else {
+        match parts.len() {
+            4 => {
+                // Format: type/app_id/arch/branch
+                if parts[0] == "app" || parts[0] == "runtime" || parts[0] == "extension" {
+                    Some(parts[1].to_string())
+                } else {
+                    // Format: app_id/arch/branch/something (unlikely but handle it)
+                    Some(parts[0].to_string())
+                }
+            }
+            3 => {
+                // Format: app_id/arch/branch
                 Some(parts[0].to_string())
             }
-        } else {
-            None
+            _ => {
+                // Fallback: try to find the longest part that looks like a domain name
+                parts
+                    .into_iter()
+                    .find(|p| p.contains('.'))
+                    .map(|s| s.to_string())
+            }
         }
     }
 
