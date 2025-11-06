@@ -89,7 +89,7 @@ impl Application {
                     }
                 );
 
-                // get all available updates with versions
+                // get all available updates with versions in one call
                 let all_updates_task = task::spawn_blocking({
                     let installation = installation.clone();
                     move || {
@@ -125,7 +125,7 @@ impl Application {
                     move || {
                         if super::is_flatpak() {
                             Command::new("flatpak-spawn")
-                                .args(["--host", "flatpak", "update", &installation, "--no-deploy"])
+                                .args(["--host", "flatpak", "update", &installation])
                                 .stdin(std::process::Stdio::piped())
                                 .stdout(std::process::Stdio::piped())
                                 .stderr(std::process::Stdio::piped())
@@ -140,7 +140,7 @@ impl Application {
                                 })
                         } else {
                             Command::new("flatpak")
-                                .args(["update", &installation, "--no-deploy"])
+                                .args(["update", &installation])
                                 .stdin(std::process::Stdio::piped())
                                 .stdout(std::process::Stdio::piped())
                                 .stderr(std::process::Stdio::piped())
@@ -181,66 +181,40 @@ impl Application {
                 if let Ok(Ok(cmd_output)) = updatable_apps_result {
                     let output_str = String::from_utf8_lossy(&cmd_output.stdout);
                     let mut local_updates = HashMap::new();
-                    let mut in_updates_section = false;
+                    let mut found_list = false;
 
                     for line in output_str.lines() {
                         let trimmed = line.trim();
 
-                        // skip empty lines
-                        if trimmed.is_empty() {
-                            continue;
+                        // look for the start of the numbered list
+                        if !found_list && trimmed.starts_with("1.") {
+                            found_list = true;
                         }
 
-                        // section headers that indicate we're in the updates list
-                        if trimmed.contains("Updates")
-                            || trimmed.starts_with("ID")
-                            || trimmed.starts_with("Application")
-                        {
-                            in_updates_section = true;
-                            continue;
-                        }
+                        // if we found the list, parse numbered entries
+                        if found_list {
+                            // parse lines like: "1.   org.gnome.Calculator stable  u   fedora  <   2,5 MB"
+                            if let Some(number_end) = trimmed.find('.') {
+                                if trimmed[..number_end]
+                                    .chars()
+                                    .all(|c| c.is_ascii_digit() || c.is_whitespace())
+                                {
+                                    let after_number = &trimmed[number_end + 1..].trim();
+                                    let parts: Vec<&str> =
+                                        after_number.split_whitespace().collect();
 
-                        // look for numbered list entries (e.g., "1.", "2.", etc.)
-                        if let Some(dot_pos) = trimmed.find('.') {
-                            let prefix = &trimmed[..dot_pos];
+                                    if !parts.is_empty() {
+                                        let app_id = parts[0];
 
-                            // Check if prefix is a number (possibly with whitespace)
-                            if prefix.trim().chars().all(|c| c.is_ascii_digit()) {
-                                in_updates_section = true;
-
-                                // extract app ID after the number
-                                let after_number = trimmed[dot_pos + 1..].trim();
-                                let parts: Vec<&str> = after_number.split_whitespace().collect();
-
-                                if !parts.is_empty() {
-                                    let app_id = parts[0];
-
-                                    // look up version from pre-fetched map
-                                    if let Some(version) = available_versions.get(app_id) {
-                                        println!("Found updatable app: {} -> {}", app_id, version);
-                                        local_updates.insert(app_id.to_string(), version.clone());
-                                    }
-                                }
-                            }
-                        }
-                        // alternative: parse lines that look like app IDs directly (for formats without numbering)
-                        else if in_updates_section
-                            && trimmed.contains('.')
-                            && !trimmed.starts_with("Do you")
-                        {
-                            let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                            if !parts.is_empty() {
-                                let potential_app_id = parts[0];
-                                // Check if it looks like an app ID (reverse domain notation)
-                                if potential_app_id.matches('.').count() >= 2 {
-                                    if let Some(version) = available_versions.get(potential_app_id)
-                                    {
-                                        println!(
-                                            "Found updatable app: {} -> {}",
-                                            potential_app_id, version
-                                        );
-                                        local_updates
-                                            .insert(potential_app_id.to_string(), version.clone());
+                                        // look up version from pre-fetched map
+                                        if let Some(version) = available_versions.get(app_id) {
+                                            println!(
+                                                "Found updatable app: {} -> {}",
+                                                app_id, version
+                                            );
+                                            local_updates
+                                                .insert(app_id.to_string(), version.clone());
+                                        }
                                     }
                                 }
                             }
